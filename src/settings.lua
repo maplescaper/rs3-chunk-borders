@@ -18,61 +18,46 @@ Settings.groups = {
         id = "regions",
         name = "Regions",
         entries = {
-            -- Disable to allow you to pick chunks in underground (non-overworld) areas.
-            { key = "overworldDetection", name = "Overworld only", type = "bool", default = true },
-
-            -- Holds the unlocked chunk IDs. Can paste a list of chunk IDs in here from the
-            -- RS3 chunk picker.
+            { key = "overworldDetection", name = "Overworld only", type = "bool", default = true,
+              tooltip = "Disable to allow you to pick chunks in underground (non-overworld) areas." },
             { key = "unlockedChunkIds", name = "Unlocked chunks", type = "text", default = "",
-              placeholder = "16179,16180,16434", maxLength = 1000000 },
-
-            -- Can be used to append new chunk IDs to the unlocked list.
+              placeholder = "16179,16180,16434", maxLength = 1000000,
+              tooltip = "Holds the unlocked chunk IDs. Paste a list of chunk IDs in here from the RS3 chunk picker." },
             { key = "pasteChunkIds", name = "Add chunks", type = "text", default = "",
-              placeholder = "16179,16180,16434,16435,16436", maxLength = 1000000 },
-
-            -- Disable this to stop showing achievement popups when chunks are unlocked.
-            { key = "showPopups", name = "Unlock popups", type = "bool", default = true },
+              placeholder = "16179,16180,16434,16435,16436", maxLength = 1000000,
+              tooltip = "Can be used to append new chunk IDs to the unlocked list." },
+            { key = "showPopups", name = "Unlock popups", type = "bool", default = true,
+              tooltip = "Disable to stop showing achievement popups." },
         },
     },
     {
         id = "looks",
         name = "Environment Looks",
         entries = {
-            -- Disable to stop chunk grey-out/tinting.
-            { key = "greyLocked", name = "Chunk Shader", type = "bool", default = true },
-
-            -- Colour of the locked chunks tint.
-            { key = "lockedColour", name = "Shader colour", type = "colour", default = 0x000000BF },
-
-            -- Opacity of the locked chunks.
-            { key = "lockedVolumeOpacity", name = "Shader opacity", type = "float", default = 0.85, min = 0.0, max = 1.0 },
-
-            -- How far under the camera to draw the ground lid.
-            { key = "fillCameraMargin", name = "Camera margin", type = "int", default = 3, min = 0 },
-
-            -- Disable to stop showing the tall volumes on locked chunks.
-            { key = "lockedVolume", name = "Tall shader volume", type = "bool", default = true },
-
-            -- How tall to make the tall volumes.
-            { key = "lockedVolumeTiles", name = "Volume height", type = "int", default = 150, min = 0, max = 250 },
-
-            -- Enable to stop drawing the tall volumes on locked chunks next to unlocked ones.
-            { key = "lockedVolumeSkipBorder", name = "Volume gap", type = "bool", default = false },
-
-            -- Show the chunk boundary lines.
-            { key = "showRegionLines", name = "Border lines", type = "bool", default = true },
-
-            -- How thick the chunk boundary lines should be.
-            { key = "lineThickness", name = "Border width", type = "float", default = 3.0, min = 0.0, step = 0.5 },
-
-            -- Colour of the boundary lines.
-            { key = "regionColour", name = "Border colour", type = "colour", default = 0x8A8A8AFF },
-
-            -- Opacity of the boundary lines.
-            { key = "lineOpacity", name = "Border opacity", type = "float", default = 1.0, min = 0.0, max = 1.0 },
-
-            -- Radius of chunks to tint from the current chunk.
-            { key = "regionRadius", name = "Chunk radius", type = "int", default = 2, min = 0, max = 4 },
+            { key = "greyLocked", name = "Chunk Shader", type = "bool", default = true,
+              tooltip = "Disable to stop chunk grey-out/tinting." },
+            { key = "lockedColour", name = "Shader colour", type = "colour", default = 0x000000BF,
+              tooltip = "Colour of the locked chunks tint." },
+            { key = "lockedVolumeOpacity", name = "Shader opacity", type = "float", default = 0.85, min = 0.0, max = 1.0,
+              tooltip = "Opacity of the locked chunks." },
+            { key = "fillCameraMargin", name = "Camera margin", type = "int", default = 3, min = 0,
+              tooltip = "How far under the camera to draw the ground lid." },
+            { key = "lockedVolume", name = "Tall shader volume", type = "bool", default = true,
+              tooltip = "Disable to stop showing the tall volumes on locked chunks." },
+            { key = "lockedVolumeTiles", name = "Volume height", type = "int", default = 150, min = 0, max = 250,
+              tooltip = "How tall to make the tall volumes." },
+            { key = "lockedVolumeSkipBorder", name = "Volume gap", type = "bool", default = false,
+              tooltip = "Enable to stop drawing the tall volumes on adjacent locked chunks." },
+            { key = "showRegionLines", name = "Border lines", type = "bool", default = true,
+              tooltip = "Show the chunk boundary lines." },
+            { key = "lineThickness", name = "Border width", type = "float", default = 3.0, min = 0.0, step = 0.5,
+              tooltip = "How thick the chunk boundary lines should be." },
+            { key = "regionColour", name = "Border colour", type = "colour", default = 0x8A8A8AFF,
+              tooltip = "Colour of the border lines." },
+            { key = "lineOpacity", name = "Border opacity", type = "float", default = 1.0, min = 0.0, max = 1.0,
+              tooltip = "Opacity of the border lines." },
+            { key = "regionRadius", name = "Chunk radius", type = "int", default = 2, min = 0, max = 4,
+              tooltip = "Radius of chunks to tint from the current chunk." },
         },
     },
     {
@@ -83,8 +68,10 @@ Settings.groups = {
             -- across each shader box. Higher values follow the terrain closer but costs
             -- more per rebuild which can affect performance. Lower sampling rates can
             -- cause flickering/clipping issues with the ground also.
-            { key = "lineSamples", name = "Border samples", type = "int", default = 64, min = 1, max = 64 },
-            { key = "boxSamples", name = "Shader samples", type = "int", default = 8, min = 1, max = 24 },
+            { key = "lineSamples", name = "Border samples", type = "int", default = 64, min = 1, max = 64,
+              tooltip = "Number of times to sample ground height for grid lines." },
+            { key = "boxSamples", name = "Shader samples", type = "int", default = 8, min = 1, max = 24,
+              tooltip = "Number of times to sample ground height for shader boxes." },
         },
     },
 }

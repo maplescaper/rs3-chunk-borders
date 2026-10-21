@@ -14,6 +14,7 @@ local RESET_WIDTH = 160
 local STEP_WIDTH = 30
 local COLUMN_GAP = 6
 local NUMBER_LENGTH = 12
+local TOOLTIP_WIDTH = 180
 
 ---Helper to format numbers.
 ---@param entry table
@@ -79,6 +80,7 @@ function SettingsForm.build(view, panelWidth)
                         Settings.set(changed, selected == true)
                     end,
                 })
+                checkboxes[key]:SetOptionTooltip(key, { text = entry.tooltip, maxWidth = TOOLTIP_WIDTH })
 
             elseif entry.type == "int" or entry.type == "float" then
                 -- Add a text of the name with a selector for the value
@@ -124,6 +126,7 @@ function SettingsForm.build(view, panelWidth)
                         apply(typed)
                     end,
                 })
+                box:SetTooltip({ text = entry.tooltip, maxWidth = TOOLTIP_WIDTH })
 
                 -- Make the + button
                 view:AddSimpleButton("+", function()
@@ -162,6 +165,7 @@ function SettingsForm.build(view, panelWidth)
                         field:SetText(Settings.get(key), false)
                     end,
                 })
+                fields[key]:SetTooltip({ text = entry.tooltip, maxWidth = TOOLTIP_WIDTH })
 
             elseif entry.type == "colour" then
                 -- Add text describing the colour to change with the colour picker inline
@@ -180,6 +184,7 @@ function SettingsForm.build(view, panelWidth)
                     value = Settings.get(key),
                     alphaSlider = true,
                     windowTitle = entry.name,
+                    tooltip = { text = entry.tooltip, maxWidth = TOOLTIP_WIDTH },
                     onChange = function(_, colour)
                         Settings.set(key, colour)
                     end,
@@ -191,10 +196,11 @@ function SettingsForm.build(view, panelWidth)
     local handle = {}
 
     view:AddDivider()
-    view:AddSimpleButton("Reset to defaults", function()
+    local reset = view:AddSimpleButton("Reset to defaults", function()
         Settings.reset()
         handle.refresh()
     end, { width = RESET_WIDTH })
+    reset:SetTooltip({ text = "Put every setting back to its default value.", maxWidth = TOOLTIP_WIDTH })
 
     -- Do refreshes here to update settings that may have been changed
     -- from elsewhere. Don't need callbacks in those cases.
