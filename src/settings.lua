@@ -33,7 +33,7 @@ Settings.groups = {
             { key = "greyLocked", name = "Chunk Shader", type = "bool", default = true },
             { key = "lockedColour", name = "Shader colour", type = "colour", default = 0x000000BF },
             { key = "lockedVolumeOpacity", name = "Shader opacity", type = "float", default = 0.85, min = 0.0, max = 1.0 },
-            { key = "fillCameraMargin", name = "Camera margin", type = "int", default = 4, min = 0 },
+            { key = "fillCameraMargin", name = "Camera margin", type = "int", default = 3, min = 0 },
             { key = "lockedVolume", name = "Tall shader volume", type = "bool", default = true },
             { key = "lockedVolumeTiles", name = "Volume height", type = "int", default = 150, min = 0, max = 250 },
             { key = "lockedVolumeSkipBorder", name = "Volume gap", type = "bool", default = false },
