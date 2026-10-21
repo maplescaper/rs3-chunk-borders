@@ -1,0 +1,12 @@
+{
+	"author": "maplescaper",
+	"contactEmailAddress": "mscaper.plugins@gmail.com",
+	"hasRibbonIcon": true,
+	"hasSettingsIcon": true,
+	"name": "Chunk Man",
+	"repo": "https://github.com/maplescaper/rs3-chunkman",
+	"requiredDependencies": {
+		"prettyui": 6398181
+	},
+	"version": "1.0.0"
+}
