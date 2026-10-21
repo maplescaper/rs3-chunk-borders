@@ -18,11 +18,19 @@ Settings.groups = {
         id = "regions",
         name = "Regions",
         entries = {
+            -- Disable to allow you to pick chunks in underground (non-overworld) areas.
             { key = "overworldDetection", name = "Overworld only", type = "bool", default = true },
+
+            -- Holds the unlocked chunk IDs. Can paste a list of chunk IDs in here from the
+            -- RS3 chunk picker.
             { key = "unlockedChunkIds", name = "Unlocked chunks", type = "text", default = "",
               placeholder = "16179,16180,16434", maxLength = 1000000 },
+
+            -- Can be used to append new chunk IDs to the unlocked list.
             { key = "pasteChunkIds", name = "Add chunks", type = "text", default = "",
               placeholder = "16179,16180,16434,16435,16436", maxLength = 1000000 },
+
+            -- Disable this to stop showing achievement popups when chunks are unlocked.
             { key = "showPopups", name = "Unlock popups", type = "bool", default = true },
         },
     },
@@ -30,17 +38,40 @@ Settings.groups = {
         id = "looks",
         name = "Environment Looks",
         entries = {
+            -- Disable to stop chunk grey-out/tinting.
             { key = "greyLocked", name = "Chunk Shader", type = "bool", default = true },
+
+            -- Colour of the locked chunks tint.
             { key = "lockedColour", name = "Shader colour", type = "colour", default = 0x000000BF },
+
+            -- Opacity of the locked chunks.
             { key = "lockedVolumeOpacity", name = "Shader opacity", type = "float", default = 0.85, min = 0.0, max = 1.0 },
+
+            -- How far under the camera to draw the ground lid.
             { key = "fillCameraMargin", name = "Camera margin", type = "int", default = 3, min = 0 },
+
+            -- Disable to stop showing the tall volumes on locked chunks.
             { key = "lockedVolume", name = "Tall shader volume", type = "bool", default = true },
+
+            -- How tall to make the tall volumes.
             { key = "lockedVolumeTiles", name = "Volume height", type = "int", default = 150, min = 0, max = 250 },
+
+            -- Enable to stop drawing the tall volumes on locked chunks next to unlocked ones.
             { key = "lockedVolumeSkipBorder", name = "Volume gap", type = "bool", default = false },
+
+            -- Show the chunk boundary lines.
             { key = "showRegionLines", name = "Border lines", type = "bool", default = true },
+
+            -- How thick the chunk boundary lines should be.
             { key = "lineThickness", name = "Border width", type = "float", default = 3.0, min = 0.0, step = 0.5 },
+
+            -- Colour of the boundary lines.
             { key = "regionColour", name = "Border colour", type = "colour", default = 0x8A8A8AFF },
+
+            -- Opacity of the boundary lines.
             { key = "lineOpacity", name = "Border opacity", type = "float", default = 1.0, min = 0.0, max = 1.0 },
+
+            -- Radius of chunks to tint from the current chunk.
             { key = "regionRadius", name = "Chunk radius", type = "int", default = 2, min = 0, max = 4 },
         },
     },
