@@ -1,5 +1,11 @@
 -- Sets up everything for the two UI components in the plugin hub, and 
 -- the plugin menu. Wrapped with pcall's to better handle failures.
+--
+-- When resizing the settings panel, some significant lag started happening.
+-- It looks like there's a leak somewhere in PrettyUI causing this and it's
+-- more visible here because of the number of components we have. As a
+-- workaround, we stop drawing the settings panel while the plugin menu is
+-- being resized. An issue was filed on the PrettyUI repo about this.
 
 local ContentView = require("src/ui/content_view")
 local Library = require("src/ui/prettyui")
@@ -13,18 +19,26 @@ local EVENT_ID = "chunkman-ui"
 local SETTINGS_EVENT = "SettingsLayerReady"
 local CONTENT_EVENT = "ContentLayerReady"
 
+-- Draw subscription id used to defer content rebuilds.
+local MOUNT_EVENT_ID = "chunkman-ui-mount"
+
 local mounted = {
     settings = nil,
     content = nil,
 }
 local lastChunkID = nil
 
+-- Number of frames with no resize before we start drawing the settings again.
+local QUIET_FRAMES = 10
+local pendingContent = nil
+local quietFrames = 0
+local contentArmed = false
+
 ---Releases/destroys a mounted component (slot).
 ---@param slot table|nil
 local function release(slot)
     if slot == nil then return end
-    if slot.handle then pcall(slot.handle.destroy) end
-    if slot.view then pcall(function() slot.view:Destroy() end) end
+    if slot.view then slot.view:Destroy() end
 end
 
 ---Mounts a UI component.
@@ -94,6 +108,40 @@ local function onSettingChanged()
     UI.refresh()
 end
 
+---Runs each draw frame while a content rebuild is pending. It waits for the
+---ContentLayerReady events to stop for a bit, then rebuilds.
+---See note at the top of the file for more info about why.
+local function onMountFrame()
+    if pendingContent == nil then
+        contentArmed = false
+        Event.Draw.Unsubscribe(MOUNT_EVENT_ID)
+        return
+    end
+
+    quietFrames = quietFrames + 1
+    if quietFrames < QUIET_FRAMES then return end
+
+    local component = pendingContent
+    pendingContent = nil
+    quietFrames = 0
+    contentArmed = false
+    Event.Draw.Unsubscribe(MOUNT_EVENT_ID)
+
+    mount("content", component, ContentView.build)
+    lastChunkID = Overlay.currentChunkID()
+end
+
+---Schedules a component mount (to handle resizing issues). Resets quiet
+---frames to 0 during resizes if there's a mount in progress.
+---@param component table
+local function scheduleContentMount(component)
+    pendingContent = component
+    quietFrames = 0
+    if contentArmed then return end
+    contentArmed = true
+    Event.Draw.Subscribe(MOUNT_EVENT_ID, onMountFrame)
+end
+
 ---Initialize the UI for the settings in the panel hub (settings)
 ---and the plugin menu (content).
 function UI.init()
@@ -101,8 +149,7 @@ function UI.init()
         mount("settings", event.component, SettingsView.build)
     end)
     Event[CONTENT_EVENT].Subscribe(EVENT_ID, function(event)
-        mount("content", event.component, ContentView.build)
-        lastChunkID = Overlay.currentChunkID()
+        scheduleContentMount(event.component)
     end)
 
     return onSettingChanged
@@ -110,10 +157,20 @@ end
 
 ---Destroy all the components.
 function UI.unmount()
+    -- Cancel any pending mounts
+    pendingContent = nil
+    quietFrames = 0
+    if contentArmed then
+        contentArmed = false
+        Event.Draw.Unsubscribe(MOUNT_EVENT_ID)
+    end
+
+    -- Destroy mounted components
     for name, slot in pairs(mounted) do
         release(slot)
         mounted[name] = nil
     end
+
     lastChunkID = nil
 end
 
