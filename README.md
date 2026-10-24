@@ -1,6 +1,6 @@
-# Chunk Man
+# Chunk Borders
 
-A Chunk Man plugin for Runescape to grey-out chunks/regions and draw chunk line boundaries in game. Similar functionality to the [Region Locker](https://github.com/slaytostay/region-locker) plugin in OSRS.
+A plugin for Runescape to grey-out chunks/regions and draw chunk line boundaries in game. Similar functionality to the [Region Locker](https://github.com/slaytostay/region-locker) plugin in OSRS. Primarily used to play Chunkman mode, but can be used for other modes that need regions to be greyed out (see open issues).
 
 ## Features
 
@@ -43,7 +43,7 @@ If you're facing any performance issues while using this plugin, the following s
 
 ## Requirements
 
-Chunk Man depends on the **PrettyUI** plugin for its settings panel and popups. Enable it before enabling Chunk Man.
+Chunk Borders depends on the **PrettyUI** plugin for its settings panel and popups. Enable it before enabling Chunk Borders.
 
 ## Development
 
@@ -52,7 +52,7 @@ Chunk Man depends on the **PrettyUI** plugin for its settings panel and popups. 
 Place it under the client's `dev_plugins` directory like this:
 
 ```
-C:\ProgramData\Jagex\RuneScape-BETA\dev_plugins\chunkman
+C:\ProgramData\Jagex\RuneScape-BETA\dev_plugins\chunk-borders
 ```
 
 Then enable it from the client's plugin hub menu alongside PrettyUI.

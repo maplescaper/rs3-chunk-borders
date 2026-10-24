@@ -2,7 +2,7 @@
 
 local Library = {}
 
-local MESSAGE = "Chunk Man requires the PrettyUI dependency to be enabled first"
+local MESSAGE = "Chunk Borders requires the PrettyUI dependency to be enabled first"
 
 ---@return table prettyui
 function Library.get()

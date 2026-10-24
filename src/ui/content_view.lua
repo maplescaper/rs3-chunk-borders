@@ -35,7 +35,7 @@ end
 ---@param component table|nil the layer component the view was mounted into
 ---@return table handle { refresh = fun(), destroy = fun() }
 function ContentView.build(view, component)
-    view:AddTitle("Chunk Man")
+    view:AddTitle("Chunk Borders")
 
     -- The scroll bar is drawn over the content so a row sized to the padding
     -- runs underneath it and loses its right edge. Handle this hear by adjusting

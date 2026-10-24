@@ -3,10 +3,10 @@
 	"contactEmailAddress": "mscaper.plugins@gmail.com",
 	"hasRibbonIcon": true,
 	"hasSettingsIcon": true,
-	"name": "Chunk Man",
-	"repo": "https://github.com/maplescaper/rs3-chunkman",
+	"name": "Chunk Borders",
+	"repo": "https://github.com/maplescaper/rs3-chunk-borders",
 	"requiredDependencies": {
 		"prettyui": 6398181
 	},
-	"version": "1.1.1"
+	"version": "1.1.2"
 }

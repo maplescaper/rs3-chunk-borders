@@ -7,9 +7,9 @@ local SettingsView = {}
 ---@param view table a PrettyUI SimpleView
 ---@return table handle { refresh = fun(), destroy = fun() }
 function SettingsView.build(view)
-    view:AddTitle("Chunk Man")
+    view:AddTitle("Chunk Borders")
     view:AddText({
-        text = "Chunk Man's settings are in its own panel in the Plugins menu.",
+        text = "The Chunk Borders settings are in their own panel in the Plugins menu.",
     })
 
     view:AddText()
