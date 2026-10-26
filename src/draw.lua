@@ -187,7 +187,7 @@ end
 ---@param y number
 ---@param z number
 ---@param colour integer
----@param free (fun(): boolean)|nil true when build() costs no terrain samples
+---@param free boolean true when build() costs no terrain samples, because the geometry already exists
 ---@return boolean drawn
 local function drawShape(key, signature, build, x, y, z, colour, free)
     local entry = shapes[key]
@@ -206,7 +206,7 @@ local function drawShape(key, signature, build, x, y, z, colour, free)
     -- If we've exceeded or hit our frame budget, don't rebuild but show it again
     -- with it's previous settings this frame if it exists. Skip this if free is true (built
     -- by a previous shape).
-    if Mesh.samplesThisFrame() >= Draw.frameSampleBudget and not (free ~= nil and free()) then
+    if Mesh.samplesThisFrame() >= Draw.frameSampleBudget and not free then
         if entry == nil then return false end
         syncShape(entry, x, y, z, colour)
         return true
@@ -301,7 +301,7 @@ function Draw.Chunk(request)
             key, "box" .. Settings.get("boxSamples"),
             buildBoxOnce,
             originX, lid - Draw.BOX_REFERENCE_HEIGHT, originZ,
-            colour, function() return boxBuilt end
+            colour, boxBuilt
         ) or drew
     end
 
@@ -324,7 +324,7 @@ function Draw.Chunk(request)
             key, "w" .. width .. "s" .. Settings.get("lineSamples"),
             function() return buildOutline(level, chunk, width) end,
             originX, 0.0, originZ,
-            request.outlineRGBA, nil
+            request.outlineRGBA, false
         ) or drew
     end
 
