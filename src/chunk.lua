@@ -24,7 +24,7 @@ local chunksByID = {}
 ---@param gridX integer
 ---@param gridZ integer
 ---@return integer
-function Chunk.encode(gridX, gridZ)
+function Chunk.idFromGrid(gridX, gridZ)
     return gridX * Chunk.CHUNKS_PER_AXIS + gridZ
 end
 
@@ -33,7 +33,7 @@ end
 ---@param gridZ integer
 ---@return table chunk
 function Chunk.atGrid(gridX, gridZ)
-    local id = Chunk.encode(gridX, gridZ)
+    local id = Chunk.idFromGrid(gridX, gridZ)
     local chunk = chunksByID[id]
     if chunk == nil then
         chunk = Chunk:new(gridX, gridZ)
@@ -69,7 +69,7 @@ function Chunk:new(gridX, gridZ)
     local instance = setmetatable({}, self)
     instance.gridX = gridX
     instance.gridZ = gridZ
-    instance.id = Chunk.encode(gridX, gridZ)
+    instance.id = Chunk.idFromGrid(gridX, gridZ)
     return instance
 end
 
