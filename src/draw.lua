@@ -11,7 +11,7 @@
 --
 -- The drawing process has a frame budget that dictates how much sampling we can do per
 -- frame as well to try to limit the impact on sudden world shifts. This is handled through
--- the draw cycle: Draw.StartFrame, Draw.Square, and Draw.EndFrame. Overlay.frame 
+-- the draw cycle: Draw.BeginFrame, Draw.Square, and Draw.EndFrame. Overlay.frame
 -- handles calling these. That budget is counted within the mesh.lua file.
 --
 -- The logic that handles the drawing, caching, and rebuilding for a chunk is
@@ -346,8 +346,7 @@ function Draw.EndFrame()
         end
     end
 
-    -- For any shapes that exceeded their retry frame
-    -- don't try redrawing them.
+    -- Get rid of retry timers that have expired.
     for key, at in pairs(retryAt) do
         if at <= frame then retryAt[key] = nil end
     end

@@ -6,7 +6,7 @@ local Chunk = require("src/chunk")
 local Overworld = {}
 
 -- Main overworld chunks, and extra overworld chunks from the chunk picker.
--- These are disjointed locations. See src/chunks.lua.
+-- These are disjointed locations. See src/chunk.lua.
 Overworld.OVERWORLD = { 6950, 15424 }
 Overworld.EXTRA_OVERWORLD = {
     { 5206, 5721 },

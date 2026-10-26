@@ -67,7 +67,7 @@ end
 
 ---Absolute alpha rather than a multiplier of the colour's own, so that a
 ---strength of 1.0 means fully opaque.
----@param packed integer
+---@param packedColour integer RGBA
 ---@param alpha number 0..1
 ---@return integer
 local function atAlpha(packedColour, alpha)
@@ -76,9 +76,9 @@ local function atAlpha(packedColour, alpha)
     return (packedColour & 0xFFFFFF00) | scaled
 end
 
----Adds opacity to a component colour if requested.
----@param alpha number
----@param packed integer
+---Scales the colour's own alpha by the given opacity.
+---@param packedColour integer RGBA
+---@param alpha number 0..1
 ---@return integer
 local function withOpacity(packedColour, alpha)
     return (packedColour & 0xFFFFFF00) | math.floor((packedColour & 0xFF) * alpha + 0.5)
