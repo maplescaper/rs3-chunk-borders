@@ -33,7 +33,7 @@ end
 ---the basic info, then populates the rest of the menu with the settings.
 ---@param view table a PrettyUI SimpleView
 ---@param component table|nil the layer component the view was mounted into
----@return table handle { refresh = fun(), destroy = fun() }
+---@return table handle { refresh = fun() }
 function ContentView.build(view, component)
     view:AddTitle("Chunk Borders")
 
@@ -69,11 +69,6 @@ function ContentView.build(view, component)
         chunkLabel.content = chunkText()
         countLabel.content = countText()
         form.refresh()
-    end
-
-    function handle.destroy()
-        form.destroy()
-        handle.refresh = function() end
     end
 
     return handle

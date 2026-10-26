@@ -5,7 +5,7 @@ local SettingsView = {}
 
 ---Builds the basic settings panel.
 ---@param view table a PrettyUI SimpleView
----@return table handle { refresh = fun(), destroy = fun() }
+---@return table handle { refresh = fun() }
 function SettingsView.build(view)
     view:AddTitle("Chunk Borders")
     view:AddText({
@@ -23,10 +23,7 @@ function SettingsView.build(view)
                "results in a view where the ground is darkened but the sky isn't.",
     })
 
-    return {
-        refresh = function() end,
-        destroy = function() end,
-    }
+    return { refresh = function() end }
 end
 
 return SettingsView

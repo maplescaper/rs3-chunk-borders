@@ -52,7 +52,7 @@ end
 ---Goes through the settings and builds the panel view for them.
 ---@param view table a PrettyUI SimpleView
 ---@param panelWidth number|nil
----@return table handle { refresh = fun(), destroy = fun() }
+---@return table handle { refresh = fun() }
 function SettingsForm.build(view, panelWidth)
     local labelWidth = panelWidth or FALLBACK_WIDTH
     local checkboxes = {}
@@ -217,11 +217,6 @@ function SettingsForm.build(view, panelWidth)
         for key, picker in pairs(pickers) do
             picker:SetValue(Settings.get(key), false)
         end
-    end
-
-    function handle.destroy()
-        checkboxes, numbers, fields, pickers = {}, {}, {}, {}
-        handle.refresh = function() end
     end
 
     return handle

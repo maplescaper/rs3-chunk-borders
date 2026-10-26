@@ -95,40 +95,25 @@ function Overlay.resetTracking()
     staleFrames = 0
 end
 
----Handles a single frame start from start to finish. Delegates the
----building and drawing to the draw.lua code. The return value is used
----for testing.
----@return table summary { drawn, filled, skipped, fillHeight, trackingCamera }
-function Overlay.frame()
+---Everything that happens inside one frame. Delegates the building and
+---drawing to the draw.lua code. The summary is used for testing.
+---@param summary table
+---@return string|nil why nothing was drawn, or nil when the frame drew
+local function drawFrame(summary)
     local markLocked = Settings.get("greyLocked")
     local showLines = Settings.get("showRegionLines")
-    local summary = { drawn = 0, filled = 0, skipped = nil }
 
-    -- Don't do any drawing if none of the draw settings are enabled
-    if not markLocked and not showLines then
-        summary.skipped = "nothing-enabled"
-        Draw.BeginFrame()
-        Draw.EndFrame()
-        return summary
-    end
+    -- Nothing to draw if none of the draw settings are enabled
+    if not markLocked and not showLines then return "nothing-enabled" end
 
-    -- Don't do any drawing if the player coordinate is unavailable
+    -- Nothing to draw if the player coordinate is unavailable
     local coord = playerCoord()
-    if coord == nil then
-        summary.skipped = "no-player"
-        Draw.BeginFrame()
-        Draw.EndFrame()
-        return summary
-    end
+    if coord == nil then return "no-player" end
 
-    Draw.BeginFrame()
+    -- Nothing to draw if we're not in the overworld
     local centre = Chunk.atTile(coord)
-
-    -- Don't do any drawing if we're not in the overworld
     if not Overworld.applies(centre, Settings.get("overworldDetection")) then
-        summary.skipped = "off-map"
-        Draw.EndFrame()
-        return summary
+        return "off-map"
     end
 
     -- If the ground height under the camera is unavailable for some time, reset all the shapes.
@@ -228,6 +213,15 @@ function Overlay.frame()
         end
     end
 
+    return nil
+end
+
+---Handles a single frame from start to finish. The return value is used for testing.
+---@return table summary { drawn, filled, skipped, fillHeight, trackingCamera }
+function Overlay.frame()
+    local summary = { drawn = 0, filled = 0 }
+    Draw.BeginFrame()
+    summary.skipped = drawFrame(summary)
     Draw.EndFrame()
     return summary
 end
