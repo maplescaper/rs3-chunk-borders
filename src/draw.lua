@@ -2,7 +2,7 @@
 --
 -- The overall process involves building a mesh of vertices, then making a shape
 -- using triangles (for use in ShapeData.tris). The triangles are grouped into
--- squares (see mesh.quad in mesh.lua) in all cases. These squares then produce
+-- quads (see mesh.quad in mesh.lua) in all cases. These quads then produce
 -- the volumes or boxes shown in game. The buildBox, and buildOutline actually
 -- produce the volumes/lines seen in game.
 --
@@ -11,7 +11,7 @@
 --
 -- The drawing process has a frame budget that dictates how much sampling we can do per
 -- frame as well to try to limit the impact on sudden world shifts. This is handled through
--- the draw cycle: Draw.BeginFrame, Draw.Square, and Draw.EndFrame. Overlay.frame
+-- the draw cycle: Draw.BeginFrame, Draw.Chunk, and Draw.EndFrame. Overlay.frame
 -- handles calling these. That budget is counted within the mesh.lua file.
 --
 -- The logic that handles the drawing, caching, and rebuilding for a chunk is
@@ -58,13 +58,13 @@ end
 
 ---Builds a mesh for a box/volume.
 ---@return table|nil mesh, whose finish() gives a new ShapeData each call
-local function buildBox(level, squareX, squareZ)
-    local mesh = Mesh.new(level, squareX, squareZ)
+local function buildBox(level, chunkX, chunkZ)
+    local mesh = Mesh.new(level, chunkX, chunkZ)
     local samples = Settings.get("boxSamples")
     local lidHeight = BOX_CLEARANCE + BOX_REFERENCE_HEIGHT
 
     -- Build the lid as a grid above some sampled ground then create all the
-    -- squares that make up the lid using the mesh vertices.
+    -- quads that make up the lid using the mesh vertices.
     local lidStart = mesh.grid(samples, lidHeight)
     if lidStart == nil then return nil end
     local verticesPerRow = samples + 1
@@ -98,19 +98,19 @@ local function buildBox(level, squareX, squareZ)
     return mesh
 end
 
----Builds an outline of the region using square line segments instead of lines.
+---Builds an outline of the region using flat quad segments instead of lines.
 ---
 ---TODO: Test more with ShapeData.lines, ShapeList.Draw, and ShapeList.DrawLine.
 ---They all draw, but the line stays thin at any lineWidth settings.
 ---@param width number ribbon width, in world units
 ---@return table|nil
-local function buildOutline(level, squareX, squareZ, width)
-    local mesh = Mesh.new(level, squareX, squareZ)
+local function buildOutline(level, chunkX, chunkZ, width)
+    local mesh = Mesh.new(level, chunkX, chunkZ)
     local half = width * 0.5
     local x0, z0 = mesh.originX, mesh.originZ
-    local x1, z1 = x0 + Mesh.UNITS_PER_SQUARE, z0 + Mesh.UNITS_PER_SQUARE
+    local x1, z1 = x0 + Mesh.UNITS_PER_CHUNK, z0 + Mesh.UNITS_PER_CHUNK
 
-    -- The four edges of the square, each as its two ends and a unit vector
+    -- The four edges of the chunk, each as its two ends and a unit vector
     -- across it for handling the width: south, north, west, east.
     local edges = {
         { fromX = x0, fromZ = z0, toX = x1, toZ = z0, acrossX = 0.0, acrossZ = 1.0 },
@@ -139,7 +139,7 @@ local function buildOutline(level, squareX, squareZ, width)
             local left = mesh.vertex(leftX, leftHeight + LINE_CLEARANCE, leftZ)
             local right = mesh.vertex(rightX, rightHeight + LINE_CLEARANCE, rightZ)
 
-            -- Build a line segment (square) connected to the previous one
+            -- Build a line segment (quad) connected to the previous one
             if previous ~= nil then
                 mesh.quad(previous, previous + 1, right, left)
             end
@@ -259,27 +259,27 @@ local function drawShape(key, signature, build, x, y, z, colour, free)
     return true
 end
 
----Marks the start of a frame draw. After this Draw.Square is called,
+---Marks the start of a frame draw. After this Draw.Chunk is called,
 ---then Draw.EndFrame to complete the draw cycle.
 function Draw.BeginFrame()
     frame = frame + 1
     Mesh.resetSamples()
 end
 
----Draws everything needed in a specific square/chunk.
+---Draws everything needed in a specific chunk.
 ---
 ---The request variable specifies exactly what needs to be built and with
 ---what paremeters. The drawShape function then handles the actual drawing.
 ---@param request table {
----           level, squareX, squareZ,
+---           level, chunkX, chunkZ,
 ---           fillRGBA?, fillHeight?,
 ---           volumeRGBA?, volumeHeight?, outlineRGBA?, lineWidth?
 ---       }
 ---@return boolean drewSomething
-function Draw.Square(request)
+function Draw.Chunk(request)
     local level = request.level
-    local squareX, squareZ = request.squareX, request.squareZ
-    local originX, originZ = squareX * Mesh.UNITS_PER_SQUARE, squareZ * Mesh.UNITS_PER_SQUARE
+    local chunkX, chunkZ = request.chunkX, request.chunkZ
+    local originX, originZ = chunkX * Mesh.UNITS_PER_CHUNK, chunkZ * Mesh.UNITS_PER_CHUNK
     local drew = false
 
     ---Used to share the box built between the ground and volume so we
@@ -288,7 +288,7 @@ function Draw.Square(request)
     local function buildBoxOnce()
         if not boxBuilt then
             boxBuilt = true
-            boxMesh = buildBox(level, squareX, squareZ)
+            boxMesh = buildBox(level, chunkX, chunkZ)
         end
         if boxMesh == nil then return nil end
         return boxMesh.finish()
@@ -297,7 +297,7 @@ function Draw.Square(request)
     ---Helper for building the box and handling lid height.
     local function box(name, colour, lid)
         if lid > BOX_REFERENCE_HEIGHT then lid = BOX_REFERENCE_HEIGHT end
-        local key = string.format("%s:%d:%d:%d", name, level, squareX, squareZ)
+        local key = string.format("%s:%d:%d:%d", name, level, chunkX, chunkZ)
         drew = drawShape(
             key, "box" .. Settings.get("boxSamples"),
             buildBoxOnce,
@@ -318,12 +318,12 @@ function Draw.Square(request)
 
     -- Draw the outline, shapes get rebuilt on width changes
     if request.outlineRGBA ~= nil and request.lineWidth > 0.0 then
-        local key = string.format("line:%d:%d:%d", level, squareX, squareZ)
+        local key = string.format("line:%d:%d:%d", level, chunkX, chunkZ)
         local width = request.lineWidth * UNITS_PER_LINE_WIDTH
         -- The ribbon's width and sampling are geometry, so both are in the signature.
         drew = drawShape(
             key, "w" .. width .. "s" .. Settings.get("lineSamples"),
-            function() return buildOutline(level, squareX, squareZ, width) end,
+            function() return buildOutline(level, chunkX, chunkZ, width) end,
             originX, 0.0, originZ,
             request.outlineRGBA, nil
         ) or drew

@@ -1,50 +1,64 @@
 -- Helpers for handling chunk IDs.
 --
--- A chunk ID is squareX * 256 + squareZ, mostly the same ID the Chunk Picker uses.
+-- A chunk ID is chunkX * 256 + chunkZ, mostly the same ID the Chunk Picker uses.
 -- Existing chunk lists paste straight in except for a few regions the
 -- picker stores at a constant offset, which Chunk.pickerToGame corrects.
 
 local Chunk = {}
 
-Chunk.TILES_PER_SQUARE = 64
+Chunk.TILES_PER_CHUNK = 64
 Chunk.CHUNKS_PER_AXIS = 256
 
 ---Decodes a chunk ID into a coordinate region.
 ---@param id integer
----@return integer squareX, integer squareZ
+---@return integer chunkX, integer chunkZ
 function Chunk.decode(id)
     id = math.floor(id)
     return id // Chunk.CHUNKS_PER_AXIS, id % Chunk.CHUNKS_PER_AXIS
 end
 
 ---Encodes a coordinate region into a chunk ID.
----@param squareX integer
----@param squareZ integer
+---@param chunkX integer
+---@param chunkZ integer
 ---@return integer
-function Chunk.encode(squareX, squareZ)
-    return squareX * Chunk.CHUNKS_PER_AXIS + squareZ
+function Chunk.encode(chunkX, chunkZ)
+    return chunkX * Chunk.CHUNKS_PER_AXIS + chunkZ
+end
+
+---The chunk a coordinate is in.
+---@param coord table CoordGrid-like (absolute tile .x/.z)
+---@return integer chunkX, integer chunkZ
+function Chunk.fromCoord(coord)
+    return coord.x // Chunk.TILES_PER_CHUNK, coord.z // Chunk.TILES_PER_CHUNK
+end
+
+---The ID of the chunk a coordinate is in.
+---@param coord table CoordGrid-like
+---@return integer
+function Chunk.idFromCoord(coord)
+    return Chunk.encode(Chunk.fromCoord(coord))
 end
 
 ---Returns a string key of the coordinate region.
----@param squareX integer
----@param squareZ integer
+---@param chunkX integer
+---@param chunkZ integer
 ---@return string
-function Chunk.key(squareX, squareZ)
-    return squareX .. "," .. squareZ
+function Chunk.key(chunkX, chunkZ)
+    return chunkX .. "," .. chunkZ
 end
 
 ---Checks if a chunk is in a given bounding box.
----@param squareX integer
----@param squareZ integer
+---@param chunkX integer
+---@param chunkZ integer
 ---@param loID integer
 ---@param hiID integer
 ---@return boolean
-function Chunk.inBox(squareX, squareZ, loID, hiID)
+function Chunk.inBox(chunkX, chunkZ, loID, hiID)
     local ax, az = Chunk.decode(loID)
     local bx, bz = Chunk.decode(hiID)
     if ax > bx then ax, bx = bx, ax end
     if az > bz then az, bz = bz, az end
-    return squareX >= ax and squareX <= bx and squareZ >= az and squareZ <= bz
+    return chunkX >= ax and chunkX <= bx and chunkZ >= az and chunkZ <= bz
 end
 
 -- Chunk Picker -> in-game chunk-ID remap. The picker stores a
@@ -60,9 +74,9 @@ Chunk.PICKER_REMAP = {
 ---@param id integer a Chunk Picker chunk ID
 ---@return integer the in-game chunk ID
 function Chunk.pickerToGame(id)
-    local squareX, squareZ = Chunk.decode(id)
+    local chunkX, chunkZ = Chunk.decode(id)
     for _, remap in ipairs(Chunk.PICKER_REMAP) do
-        if Chunk.inBox(squareX, squareZ, remap[1], remap[2]) then
+        if Chunk.inBox(chunkX, chunkZ, remap[1], remap[2]) then
             return id + remap[3]
         end
     end

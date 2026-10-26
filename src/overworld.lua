@@ -16,24 +16,17 @@ Overworld.EXTRA_OVERWORLD = {
 }
 
 ---Check if a chunk is in the overworld (mapped above).
----@param squareX integer
----@param squareZ integer
+---@param chunkX integer
+---@param chunkZ integer
 ---@return boolean
-function Overworld.isOverworldSquare(squareX, squareZ)
-    if Chunk.inBox(squareX, squareZ, Overworld.OVERWORLD[1], Overworld.OVERWORLD[2]) then
+function Overworld.isOverworldChunk(chunkX, chunkZ)
+    if Chunk.inBox(chunkX, chunkZ, Overworld.OVERWORLD[1], Overworld.OVERWORLD[2]) then
         return true
     end
     for _, box in ipairs(Overworld.EXTRA_OVERWORLD) do
-        if Chunk.inBox(squareX, squareZ, box[1], box[2]) then return true end
+        if Chunk.inBox(chunkX, chunkZ, box[1], box[2]) then return true end
     end
     return false
-end
-
----The map square a coordinate is in.
----@param coord table CoordGrid-like
----@return integer squareX, integer squareZ
-function Overworld.governingSquare(coord)
-    return coord.x // Chunk.TILES_PER_SQUARE, coord.z // Chunk.TILES_PER_SQUARE
 end
 
 ---Tells us if a chunk is in the overworld or an underground area
@@ -45,8 +38,8 @@ end
 function Overworld.applies(coord, detectOverworld)
     if World.IsRegion() then return false end
     if not detectOverworld then return true end
-    local sx, sz = Overworld.governingSquare(coord)
-    return Overworld.isOverworldSquare(sx, sz)
+    local sx, sz = Chunk.fromCoord(coord)
+    return Overworld.isOverworldChunk(sx, sz)
 end
 
 return Overworld

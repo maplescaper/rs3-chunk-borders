@@ -59,7 +59,7 @@ end
 local function chunkAt(coord)
     if coord == nil then return nil end
     if not Overworld.applies(coord, Settings.get("overworldDetection")) then return nil end
-    return Chunk.encode(Overworld.governingSquare(coord))
+    return Chunk.idFromCoord(coord)
 end
 
 ---Toggles a chunk to either lock/unlock.
@@ -81,7 +81,7 @@ local function onReady(event)
     local id = chunkAt(cursorCoord())
     if id == nil then return end
 
-    local label = State.isUnlocked(id)
+    local label = State.isUnlockedChunkID(id)
         and string.format("Lock chunk %d", id)
         or string.format("Unlock chunk %d", id)
 

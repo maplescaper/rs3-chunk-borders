@@ -20,18 +20,18 @@ function State.rebuild()
 end
 
 ---Used to determine if a chunk is unlocked/locked.
----@param squareX integer
----@param squareZ integer
+---@param chunkX integer
+---@param chunkZ integer
 ---@return boolean
-function State.isUnlockedSquare(squareX, squareZ)
-    return State.unlockedSet[Chunk.key(squareX, squareZ)] == true
+function State.isUnlockedChunk(chunkX, chunkZ)
+    return State.unlockedSet[Chunk.key(chunkX, chunkZ)] == true
 end
 
 ---If an ID is an unlocked chunk.
 ---@param id integer
 ---@return boolean
-function State.isUnlocked(id)
-    return State.isUnlockedSquare(Chunk.decode(id))
+function State.isUnlockedChunkID(id)
+    return State.isUnlockedChunk(Chunk.decode(id))
 end
 
 ---Count of all the unlocked chunks.
@@ -45,7 +45,7 @@ function State.count() return #State.unlockedIDs end
 function State.setUnlocked(id, unlocked)
     id = math.floor(id)
     -- Don't do anything if the chunk is already in the expected state
-    if State.isUnlocked(id) == unlocked then return false end
+    if State.isUnlockedChunkID(id) == unlocked then return false end
 
     if unlocked then
         State.appendList({ id })
@@ -65,7 +65,7 @@ end
 ---@param id integer
 ---@return boolean nowUnlocked
 function State.toggle(id)
-    local target = not State.isUnlocked(id)
+    local target = not State.isUnlockedChunkID(id)
     State.setUnlocked(id, target)
     return target
 end

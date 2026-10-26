@@ -124,7 +124,7 @@ function Overlay.frame()
     end
 
     Draw.BeginFrame()
-    local centreX, centreZ = Overworld.governingSquare(coord)
+    local centreX, centreZ = Chunk.fromCoord(coord)
 
     -- Don't do any drawing if we're not in the overworld
     if not Overworld.applies(coord, Settings.get("overworldDetection")) then
@@ -170,14 +170,14 @@ function Overlay.frame()
 
     -- When moving the camera into a locked chunk, the tall volume tints the
     -- full game view. This can be disabled with the Volume Gap setting to only
-    -- have the the tall volumes drawn on squares that don't border unlocked chunks.
+    -- have the the tall volumes drawn on chunks that don't border unlocked chunks.
     -- Here we check if the volume is allowed if the setting is enabled.
     local skipBordering = Settings.get("lockedVolumeSkipBorder")
-    local function volumeAllowed(squareX, squareZ, ring)
+    local function volumeAllowed(chunkX, chunkZ, ring)
         if ring > 1 or not skipBordering then return true end
         for dx = -1, 1 do
             for dz = -1, 1 do
-                if (dx ~= 0 or dz ~= 0) and State.isUnlockedSquare(squareX + dx, squareZ + dz) then
+                if (dx ~= 0 or dz ~= 0) and State.isUnlockedChunk(chunkX + dx, chunkZ + dz) then
                     return false
                 end
             end
@@ -185,20 +185,20 @@ function Overlay.frame()
         return true
     end
 
-    -- Builds a request to draw a square box in a chunk then draws it. Handles all
+    -- Builds a request for everything a chunk needs drawn, then draws it. Handles all
     -- three parts of the drawing: ground fill/lid, tall volume, and grid lines.
-    local function square(squareX, squareZ, ring)
+    local function drawChunk(chunkX, chunkZ, ring)
         -- Skip any unlocked chunks.
-        local locked = markLocked and not State.isUnlockedSquare(squareX, squareZ)
+        local locked = markLocked and not State.isUnlockedChunk(chunkX, chunkZ)
         if not locked and outline == nil then return end
 
-        local request = { level = level, squareX = squareX, squareZ = squareZ }
+        local request = { level = level, chunkX = chunkX, chunkZ = chunkZ }
 
         -- Specify the grey-out boxes
         if locked then
             request.fillRGBA = tint
             request.fillHeight = fillHeight
-            if asVolume and ring <= VOLUME_RADIUS and volumeAllowed(squareX, squareZ, ring) then
+            if asVolume and ring <= VOLUME_RADIUS and volumeAllowed(chunkX, chunkZ, ring) then
                 -- Builds the tall volume above the ground fill/lid.
                 request.volumeRGBA = tint
                 request.volumeHeight = volumeHeight
@@ -212,7 +212,7 @@ function Overlay.frame()
         end
 
         -- Draw everything that was requested
-        if Draw.Square(request) then
+        if Draw.Chunk(request) then
             summary.drawn = summary.drawn + 1
             if locked then summary.filled = summary.filled + 1 end
         end
@@ -224,7 +224,7 @@ function Overlay.frame()
         for dx = -ring, ring do
             for dz = -ring, ring do
                 if math.max(math.abs(dx), math.abs(dz)) == ring then
-                    square(centreX + dx, centreZ + dz, ring)
+                    drawChunk(centreX + dx, centreZ + dz, ring)
                 end
             end
         end
@@ -239,7 +239,7 @@ end
 function Overlay.currentChunkID()
     local coord = playerCoord()
     if coord == nil then return nil end
-    return Chunk.encode(Overworld.governingSquare(coord))
+    return Chunk.idFromCoord(coord)
 end
 
 return Overlay

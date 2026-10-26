@@ -1,7 +1,7 @@
 -- Mesh builder used to build the volumes and grid lines.
 --
 -- Everything here is made of vertices and triangles (for ShapeData.tris), with
--- the triangles grouped into squares through mesh.quad. draw.lua uses this to build the
+-- the triangles grouped into quads through mesh.quad. draw.lua uses this to build the
 -- shader boxes and the border lines.
 --
 -- Every ground height read goes through mesh.height, so this is also the one
@@ -15,7 +15,7 @@ local samplesThisFrame = 0
 
 -- TODO: Move these to a constants file.
 Mesh.UNITS_PER_TILE = 512.0
-Mesh.UNITS_PER_SQUARE = Mesh.UNITS_PER_TILE * Chunk.TILES_PER_SQUARE
+Mesh.UNITS_PER_CHUNK = Mesh.UNITS_PER_TILE * Chunk.TILES_PER_CHUNK
 
 ---How many ground heights have been read since the last reset.
 ---@return integer
@@ -24,16 +24,16 @@ function Mesh.samplesThisFrame() return samplesThisFrame end
 ---Starts the count over at the start of a frame.
 function Mesh.resetSamples() samplesThisFrame = 0 end
 
----Starts a mesh for one square. The returned object carries originX, originZ,
+---Starts a mesh for one chunk. The returned object carries originX, originZ,
 ---positions and tris, plus the builder functions below. Call mesh.finish to
 ---get a ShapeData object that can be drawn.
 ---@param level integer
----@param squareX integer
----@param squareZ integer
+---@param chunkX integer
+---@param chunkZ integer
 ---@return table mesh
-function Mesh.new(level, squareX, squareZ)
-    local originX = squareX * Mesh.UNITS_PER_SQUARE
-    local originZ = squareZ * Mesh.UNITS_PER_SQUARE
+function Mesh.new(level, chunkX, chunkZ)
+    local originX = chunkX * Mesh.UNITS_PER_CHUNK
+    local originZ = chunkZ * Mesh.UNITS_PER_CHUNK
     local mesh = { originX = originX, originZ = originZ, positions = {}, tris = {} }
 
     ---Returns the ground height at this location.
@@ -48,9 +48,9 @@ function Mesh.new(level, squareX, squareZ)
     end
 
     ---Adds a new vertex to the positions.
-    ---@param x number relative to the square's origin
+    ---@param x number relative to the chunk's origin
     ---@param y number
-    ---@param z number relative to the square's origin
+    ---@param z number relative to the chunk's origin
     ---@return integer index of new vector
     local function push(x, y, z)
         mesh.positions[#mesh.positions + 1] = Vector3.new(x, y, z)
@@ -58,7 +58,7 @@ function Mesh.new(level, squareX, squareZ)
     end
 
     ---Builds a new vertex at the requested position relative to
-    ---the square's origin position.
+    ---the chunk's origin position.
     ---@param worldX number world units
     ---@param y number
     ---@param worldZ number world units
@@ -87,9 +87,9 @@ function Mesh.new(level, squareX, squareZ)
         tris[#tris + 1] = c
     end
 
-    ---Draw a square. Wound one way only since the client
-    ---draws both faces of the square.
-    ---@param a integer vertex index, then b, c, d around the square
+    ---Draw a quad. Wound one way only since the client
+    ---draws both faces of the quad.
+    ---@param a integer vertex index, then b, c, d around the quad
     ---@param b integer
     ---@param c integer
     ---@param d integer
@@ -98,12 +98,12 @@ function Mesh.new(level, squareX, squareZ)
         mesh.tri(a, c, d)
     end
 
-    ---Builds a grid on a square/chunk. Used for the lid and volumes.
+    ---Builds a grid on a chunk. Used for the lid and volumes.
     ---@param samples integer number of times we sample for the grid height for vertices
     ---@param clearance number baseline height above the ground for every vertex
     ---@return integer|nil first index of the south-west vertex, nil when terrain is not loaded
     function mesh.grid(samples, clearance)
-        local step = Mesh.UNITS_PER_SQUARE / samples
+        local step = Mesh.UNITS_PER_CHUNK / samples
         local first = #mesh.positions
 
         for row = 0, samples do
