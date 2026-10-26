@@ -3,7 +3,7 @@
 
 local Settings = {}
 
-local SAVE_KEY = "chunkman-settings-v1"
+local SAVE_KEY = "chunk-borders-settings-v1"
 
 -- Version is not needed at the moment but will be useful if there needs to
 ---be a setting migration of any sort.

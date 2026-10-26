@@ -15,12 +15,12 @@ local SettingsView = require("src/ui/settings_view")
 
 local UI = {}
 
-local EVENT_ID = "chunkman-ui"
+local EVENT_ID = "chunk-borders-ui"
 local SETTINGS_EVENT = "SettingsLayerReady"
 local CONTENT_EVENT = "ContentLayerReady"
 
 -- Draw subscription id used to defer content rebuilds.
-local MOUNT_EVENT_ID = "chunkman-ui-mount"
+local MOUNT_EVENT_ID = "chunk-borders-ui-mount"
 
 local mounted = {
     settings = nil,

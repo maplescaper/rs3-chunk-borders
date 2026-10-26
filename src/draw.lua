@@ -234,7 +234,7 @@ local function drawShape(key, signature, build, x, y, z, colour, free)
     -- Make an instance and cache for the shape if it doesn't have one yet.
     if entry == nil then
         serial = serial + 1
-        local shape = ShapeList.CreateInstance(string.format("chunkman_%d", serial))
+        local shape = ShapeList.CreateInstance(string.format("chunk_borders_%d", serial))
         if shape == nil then return false end
         entry = { shape = shape }
         shapes[key] = entry

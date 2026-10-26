@@ -5,7 +5,7 @@ local Overlay = require("src/overlay")
 local Minimenu = require("src/minimenu")
 local UI = require("src/ui/init")
 
-local EVENT_ID = "chunkman"
+local EVENT_ID = "chunk-borders"
 
 -- Initialize everything starting with the settings and chunk state.
 Settings.load()

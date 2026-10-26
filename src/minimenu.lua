@@ -11,7 +11,7 @@ local UI = require("src/ui/init")
 
 local Minimenu = {}
 
-local EVENT_ID = "chunkman-minimenu"
+local EVENT_ID = "chunk-borders-minimenu"
 
 local started = false
 
