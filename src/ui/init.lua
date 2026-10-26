@@ -30,9 +30,9 @@ local lastChunkID = nil
 
 -- Number of frames with no resize before we start drawing the settings again.
 local QUIET_FRAMES = 10
+
 local pendingContent = nil
 local quietFrames = 0
-local contentArmed = false
 
 ---Releases/destroys a mounted component (slot).
 ---@param slot table|nil
@@ -112,19 +112,12 @@ end
 ---ContentLayerReady events to stop for a bit, then rebuilds.
 ---See note at the top of the file for more info about why.
 local function onMountFrame()
-    if pendingContent == nil then
-        contentArmed = false
-        Event.Draw.Unsubscribe(MOUNT_EVENT_ID)
-        return
-    end
-
     quietFrames = quietFrames + 1
     if quietFrames < QUIET_FRAMES then return end
 
     local component = pendingContent
     pendingContent = nil
     quietFrames = 0
-    contentArmed = false
     Event.Draw.Unsubscribe(MOUNT_EVENT_ID)
 
     mount("content", component, ContentView.build)
@@ -135,11 +128,12 @@ end
 ---frames to 0 during resizes if there's a mount in progress.
 ---@param component table
 local function scheduleContentMount(component)
+    local alreadyWaiting = pendingContent ~= nil
     pendingContent = component
     quietFrames = 0
-    if contentArmed then return end
-    contentArmed = true
-    Event.Draw.Subscribe(MOUNT_EVENT_ID, onMountFrame)
+    if not alreadyWaiting then
+        Event.Draw.Subscribe(MOUNT_EVENT_ID, onMountFrame)
+    end
 end
 
 ---Initialize the UI for the settings in the panel hub (settings)
@@ -157,13 +151,12 @@ end
 
 ---Destroy all the components.
 function UI.unmount()
-    -- Cancel any pending mounts
-    pendingContent = nil
-    quietFrames = 0
-    if contentArmed then
-        contentArmed = false
+    -- Cancel any pending mount
+    if pendingContent ~= nil then
+        pendingContent = nil
         Event.Draw.Unsubscribe(MOUNT_EVENT_ID)
     end
+    quietFrames = 0
 
     -- Destroy mounted components
     for name, slot in pairs(mounted) do
