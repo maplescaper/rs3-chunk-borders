@@ -1,4 +1,8 @@
 -- Handles the current state of locked/unlocked chunks along with helpers.
+--
+-- The unlocked list is stored as chunk IDs, since that is what the settings
+-- field and the chunk picker speak. In memory it is also held as a set keyed
+-- by Chunk object, which is what the drawing code asks about.
 
 local Chunk = require("src/chunk")
 local Settings = require("src/settings")
@@ -13,25 +17,24 @@ function State.rebuild()
     local ids = Chunk.parseList(Settings.get("unlockedChunkIds"))
     local set = {}
     for _, id in ipairs(ids) do
-        set[Chunk.key(Chunk.decode(id))] = true
+        set[Chunk.atID(id)] = true
     end
     State.unlockedIDs = ids
     State.unlockedSet = set
 end
 
 ---Used to determine if a chunk is unlocked/locked.
----@param chunkX integer
----@param chunkZ integer
+---@param chunk table
 ---@return boolean
-function State.isUnlockedChunk(chunkX, chunkZ)
-    return State.unlockedSet[Chunk.key(chunkX, chunkZ)] == true
+function State.isUnlockedChunk(chunk)
+    return State.unlockedSet[chunk] == true
 end
 
 ---If an ID is an unlocked chunk.
 ---@param id integer
 ---@return boolean
 function State.isUnlockedChunkID(id)
-    return State.isUnlockedChunk(Chunk.decode(id))
+    return State.isUnlockedChunk(Chunk.atID(id))
 end
 
 ---Count of all the unlocked chunks.
@@ -39,21 +42,20 @@ end
 function State.count() return #State.unlockedIDs end
 
 ---Sets the state of the chunk (either locked or unlocked).
----@param id integer
+---@param chunk table
 ---@param unlocked boolean
 ---@return boolean changed
-function State.setUnlocked(id, unlocked)
-    id = math.floor(id)
+function State.setUnlocked(chunk, unlocked)
     -- Don't do anything if the chunk is already in the expected state
-    if State.isUnlockedChunkID(id) == unlocked then return false end
+    if State.isUnlockedChunk(chunk) == unlocked then return false end
 
     if unlocked then
-        State.appendList({ id })
+        State.appendList({ chunk.id })
     else
         -- Rebuild the list without the locked chunk (keeping it sorted)
         local ids = {}
         for _, existing in ipairs(State.unlockedIDs) do
-            if existing ~= id then ids[#ids + 1] = existing end
+            if existing ~= chunk.id then ids[#ids + 1] = existing end
         end
         Settings.set("unlockedChunkIds", Chunk.formatList(ids))
     end
@@ -62,11 +64,11 @@ function State.setUnlocked(id, unlocked)
 end
 
 ---Toggles a locked/unlocked chunk.
----@param id integer
+---@param chunk table
 ---@return boolean nowUnlocked
-function State.toggle(id)
-    local target = not State.isUnlockedChunkID(id)
-    State.setUnlocked(id, target)
+function State.toggle(chunk)
+    local target = not State.isUnlockedChunk(chunk)
+    State.setUnlocked(chunk, target)
     return target
 end
 
@@ -108,7 +110,7 @@ function State.convertNew(ids)
     for _, id in ipairs(State.unlockedIDs) do known[id] = true end
     local seen, out = {}, {}
     for _, id in ipairs(ids) do
-        if not known[id] then id = Chunk.pickerToGame(id) end
+        if not known[id] then id = Chunk.pickerToGameID(id) end
         if not seen[id] then
             seen[id] = true
             out[#out + 1] = id

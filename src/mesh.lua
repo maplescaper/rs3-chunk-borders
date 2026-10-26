@@ -13,10 +13,6 @@ local Mesh = {}
 
 local samplesThisFrame = 0
 
--- TODO: Move these to a constants file.
-Mesh.UNITS_PER_TILE = 512.0
-Mesh.UNITS_PER_CHUNK = Mesh.UNITS_PER_TILE * Chunk.TILES_PER_CHUNK
-
 ---How many ground heights have been read since the last reset.
 ---@return integer
 function Mesh.samplesThisFrame() return samplesThisFrame end
@@ -28,12 +24,10 @@ function Mesh.resetSamples() samplesThisFrame = 0 end
 ---positions and tris, plus the builder functions below. Call mesh.finish to
 ---get a ShapeData object that can be drawn.
 ---@param level integer
----@param chunkX integer
----@param chunkZ integer
+---@param chunk table
 ---@return table mesh
-function Mesh.new(level, chunkX, chunkZ)
-    local originX = chunkX * Mesh.UNITS_PER_CHUNK
-    local originZ = chunkZ * Mesh.UNITS_PER_CHUNK
+function Mesh.new(level, chunk)
+    local originX, originZ = chunk:worldOrigin()
     local mesh = { originX = originX, originZ = originZ, positions = {}, tris = {} }
 
     ---Returns the ground height at this location.
@@ -103,7 +97,7 @@ function Mesh.new(level, chunkX, chunkZ)
     ---@param clearance number baseline height above the ground for every vertex
     ---@return integer|nil first index of the south-west vertex, nil when terrain is not loaded
     function mesh.grid(samples, clearance)
-        local step = Mesh.UNITS_PER_CHUNK / samples
+        local step = Chunk.UNITS_PER_CHUNK / samples
         local first = #mesh.positions
 
         for row = 0, samples do

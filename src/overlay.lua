@@ -11,13 +11,11 @@ local State = require("src/state")
 
 local Overlay = {}
 
-local TILES_TO_UNITS = 512.0
-
 -- How big of a ring to grey out around the player
 local VOLUME_RADIUS = 2
 
 -- How low the ground lid can go underneath the camera
-local FILL_MIN_LID = 0.5 * TILES_TO_UNITS
+local FILL_MIN_LID = 0.5 * Chunk.UNITS_PER_TILE
 
 ---Helper to get the player's coords.
 ---@return table|nil
@@ -40,7 +38,7 @@ end
 ---@return number|nil
 local function groundUnder(coord)
     local height, available = World.GetGroundHeight(
-        coord.level or 0, coord.x * TILES_TO_UNITS, coord.z * TILES_TO_UNITS
+        coord.level or 0, coord.x * Chunk.UNITS_PER_TILE, coord.z * Chunk.UNITS_PER_TILE
     )
     if not available then return nil end
     return height
@@ -59,7 +57,7 @@ local function fillHeightFor(coord, margin)
 
     -- Determine the height based on the settings and min/maxs
     local wanted = eye - ground - margin
-    if wanted > Draw.MAX_FILL_HEIGHT then wanted = Draw.MAX_FILL_HEIGHT end
+    if wanted > Draw.BOX_REFERENCE_HEIGHT then wanted = Draw.BOX_REFERENCE_HEIGHT end
     if wanted < FILL_MIN_LID then wanted = FILL_MIN_LID end
 
     return wanted, true
@@ -124,10 +122,10 @@ function Overlay.frame()
     end
 
     Draw.BeginFrame()
-    local centreX, centreZ = Chunk.fromCoord(coord)
+    local centre = Chunk.atTile(coord)
 
     -- Don't do any drawing if we're not in the overworld
-    if not Overworld.applies(coord, Settings.get("overworldDetection")) then
+    if not Overworld.applies(centre, Settings.get("overworldDetection")) then
         summary.skipped = "off-map"
         Draw.EndFrame()
         return summary
@@ -151,14 +149,14 @@ function Overlay.frame()
     local lineWidth = Settings.get("lineThickness")
 
     local asVolume = Settings.get("lockedVolume")
-    local volumeHeight = Settings.get("lockedVolumeTiles") * TILES_TO_UNITS
+    local volumeHeight = Settings.get("lockedVolumeTiles") * Chunk.UNITS_PER_TILE
     local strength = Settings.get("lockedVolumeOpacity")
 
     -- The ground volume lid always follows the camera height so that a locked
     -- chunk is greyed out under it. Otherwise if we end up inside the volume
     -- with the camera it looks like the chunk is unlocked.
     local fillHeight, tracking = fillHeightFor(
-        coord, Settings.get("fillCameraMargin") * TILES_TO_UNITS
+        coord, Settings.get("fillCameraMargin") * Chunk.UNITS_PER_TILE
     )
     summary.trackingCamera = tracking
     summary.fillHeight = fillHeight
@@ -173,11 +171,11 @@ function Overlay.frame()
     -- have the the tall volumes drawn on chunks that don't border unlocked chunks.
     -- Here we check if the volume is allowed if the setting is enabled.
     local skipBordering = Settings.get("lockedVolumeSkipBorder")
-    local function volumeAllowed(chunkX, chunkZ, ring)
+    local function volumeAllowed(chunk, ring)
         if ring > 1 or not skipBordering then return true end
         for dx = -1, 1 do
             for dz = -1, 1 do
-                if (dx ~= 0 or dz ~= 0) and State.isUnlockedChunk(chunkX + dx, chunkZ + dz) then
+                if (dx ~= 0 or dz ~= 0) and State.isUnlockedChunk(chunk:neighbour(dx, dz)) then
                     return false
                 end
             end
@@ -187,18 +185,18 @@ function Overlay.frame()
 
     -- Builds a request for everything a chunk needs drawn, then draws it. Handles all
     -- three parts of the drawing: ground fill/lid, tall volume, and grid lines.
-    local function drawChunk(chunkX, chunkZ, ring)
+    local function drawChunk(chunk, ring)
         -- Skip any unlocked chunks.
-        local locked = markLocked and not State.isUnlockedChunk(chunkX, chunkZ)
+        local locked = markLocked and not State.isUnlockedChunk(chunk)
         if not locked and outline == nil then return end
 
-        local request = { level = level, chunkX = chunkX, chunkZ = chunkZ }
+        local request = { level = level, chunk = chunk }
 
         -- Specify the grey-out boxes
         if locked then
             request.fillRGBA = tint
             request.fillHeight = fillHeight
-            if asVolume and ring <= VOLUME_RADIUS and volumeAllowed(chunkX, chunkZ, ring) then
+            if asVolume and ring <= VOLUME_RADIUS and volumeAllowed(chunk, ring) then
                 -- Builds the tall volume above the ground fill/lid.
                 request.volumeRGBA = tint
                 request.volumeHeight = volumeHeight
@@ -224,7 +222,7 @@ function Overlay.frame()
         for dx = -ring, ring do
             for dz = -ring, ring do
                 if math.max(math.abs(dx), math.abs(dz)) == ring then
-                    drawChunk(centreX + dx, centreZ + dz, ring)
+                    drawChunk(centre:neighbour(dx, dz), ring)
                 end
             end
         end
@@ -239,7 +237,7 @@ end
 function Overlay.currentChunkID()
     local coord = playerCoord()
     if coord == nil then return nil end
-    return Chunk.idFromCoord(coord)
+    return Chunk.atTile(coord).id
 end
 
 return Overlay

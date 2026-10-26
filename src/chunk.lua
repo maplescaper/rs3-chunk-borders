@@ -1,64 +1,103 @@
--- Helpers for handling chunk IDs.
+-- A chunk is a 64x64 tile region of the map which the plugin locks/unlocks.
+-- There is one Chunk object per chunk and you can use atGrid, atID, and
+-- atTile to access them depending on the input you have.
 --
--- A chunk ID is chunkX * 256 + chunkZ, mostly the same ID the Chunk Picker uses.
+-- The term grid here refers to the chunk grid, or a grid of 64x64-tile chunks.
+-- Tile refers to an in-game coordinate (like the play position).
+--
+-- A chunk ID is gridX * 256 + gridZ, mostly the same ID the Chunk Picker uses.
 -- Existing chunk lists paste straight in except for a few regions the
--- picker stores at a constant offset, which Chunk.pickerToGame corrects.
+-- picker stores at a constant offset, which Chunk.pickerToGameID corrects.
 
 local Chunk = {}
+Chunk.__index = Chunk
 
 Chunk.TILES_PER_CHUNK = 64
 Chunk.CHUNKS_PER_AXIS = 256
+Chunk.UNITS_PER_TILE = 512.0
+Chunk.UNITS_PER_CHUNK = Chunk.UNITS_PER_TILE * Chunk.TILES_PER_CHUNK
 
----Decodes a chunk ID into a coordinate region.
+-- Every chunk object made so far, by ID, so that lookups share one object.
+local chunksByID = {}
+
+---Converts a grid position into a chunk ID.
+---@param gridX integer
+---@param gridZ integer
+---@return integer
+function Chunk.encode(gridX, gridZ)
+    return gridX * Chunk.CHUNKS_PER_AXIS + gridZ
+end
+
+---The chunk at a grid position.
+---@param gridX integer
+---@param gridZ integer
+---@return table chunk
+function Chunk.atGrid(gridX, gridZ)
+    local id = Chunk.encode(gridX, gridZ)
+    local chunk = chunksByID[id]
+    if chunk == nil then
+        chunk = Chunk:new(gridX, gridZ)
+        chunksByID[id] = chunk
+    end
+    return chunk
+end
+
+---The chunk with a given ID.
 ---@param id integer
----@return integer chunkX, integer chunkZ
-function Chunk.decode(id)
+---@return table chunk
+function Chunk.atID(id)
     id = math.floor(id)
-    return id // Chunk.CHUNKS_PER_AXIS, id % Chunk.CHUNKS_PER_AXIS
+    return Chunk.atGrid(id // Chunk.CHUNKS_PER_AXIS, id % Chunk.CHUNKS_PER_AXIS)
 end
 
----Encodes a coordinate region into a chunk ID.
----@param chunkX integer
----@param chunkZ integer
----@return integer
-function Chunk.encode(chunkX, chunkZ)
-    return chunkX * Chunk.CHUNKS_PER_AXIS + chunkZ
-end
-
----The chunk a coordinate is in.
+---The chunk a tile coordinate is in.
 ---@param coord table CoordGrid-like (absolute tile .x/.z)
----@return integer chunkX, integer chunkZ
-function Chunk.fromCoord(coord)
-    return coord.x // Chunk.TILES_PER_CHUNK, coord.z // Chunk.TILES_PER_CHUNK
+---@return table chunk
+function Chunk.atTile(coord)
+    return Chunk.atGrid(
+        math.floor(coord.x / Chunk.TILES_PER_CHUNK),
+        math.floor(coord.z / Chunk.TILES_PER_CHUNK)
+    )
 end
 
----The ID of the chunk a coordinate is in.
----@param coord table CoordGrid-like
----@return integer
-function Chunk.idFromCoord(coord)
-    return Chunk.encode(Chunk.fromCoord(coord))
+---A fresh chunk object. Callers go through Chunk.atGrid, Chunk.atID or
+---Chunk.atTile instead, so that two lookups of the same chunk share one object.
+---@param gridX integer
+---@param gridZ integer
+---@return table chunk with .id, .gridX and .gridZ
+function Chunk:new(gridX, gridZ)
+    local instance = setmetatable({}, self)
+    instance.gridX = gridX
+    instance.gridZ = gridZ
+    instance.id = Chunk.encode(gridX, gridZ)
+    return instance
 end
 
----Returns a string key of the coordinate region.
----@param chunkX integer
----@param chunkZ integer
----@return string
-function Chunk.key(chunkX, chunkZ)
-    return chunkX .. "," .. chunkZ
+---The chunk some grid steps away from this one.
+---@param dx integer
+---@param dz integer
+---@return table chunk
+function Chunk:neighbour(dx, dz)
+    return Chunk.atGrid(self.gridX + dx, self.gridZ + dz)
 end
 
----Checks if a chunk is in a given bounding box.
----@param chunkX integer
----@param chunkZ integer
+---The south-west corner of the chunk, in world units.
+---@return number originX, number originZ
+function Chunk:worldOrigin()
+    return self.gridX * Chunk.UNITS_PER_CHUNK, self.gridZ * Chunk.UNITS_PER_CHUNK
+end
+
+---Checks if the chunk is inside the box spanned by two chunk IDs.
 ---@param loID integer
 ---@param hiID integer
 ---@return boolean
-function Chunk.inBox(chunkX, chunkZ, loID, hiID)
-    local ax, az = Chunk.decode(loID)
-    local bx, bz = Chunk.decode(hiID)
+function Chunk:inBox(loID, hiID)
+    local lo, hi = Chunk.atID(loID), Chunk.atID(hiID)
+    local ax, bx = lo.gridX, hi.gridX
+    local az, bz = lo.gridZ, hi.gridZ
     if ax > bx then ax, bx = bx, ax end
     if az > bz then az, bz = bz, az end
-    return chunkX >= ax and chunkX <= bx and chunkZ >= az and chunkZ <= bz
+    return self.gridX >= ax and self.gridX <= bx and self.gridZ >= az and self.gridZ <= bz
 end
 
 -- Chunk Picker -> in-game chunk-ID remap. The picker stores a
@@ -70,17 +109,17 @@ Chunk.PICKER_REMAP = {
     {  7471,  7986, -2265 },   -- Lost Grove
 }
 
----Uses the picker remap above to map the chunk picker IDs into ingame ones.
+---Uses the picker remap above to map a chunk picker ID to an in-game one.
 ---@param id integer a Chunk Picker chunk ID
 ---@return integer the in-game chunk ID
-function Chunk.pickerToGame(id)
-    local chunkX, chunkZ = Chunk.decode(id)
+function Chunk.pickerToGameID(id)
+    local chunk = Chunk.atID(id)
     for _, remap in ipairs(Chunk.PICKER_REMAP) do
-        if Chunk.inBox(chunkX, chunkZ, remap[1], remap[2]) then
-            return id + remap[3]
+        if chunk:inBox(remap[1], remap[2]) then
+            return chunk.id + remap[3]
         end
     end
-    return id
+    return chunk.id
 end
 
 ---Junk tokens and negatives are dropped rather than raising because this

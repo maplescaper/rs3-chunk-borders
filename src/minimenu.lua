@@ -53,20 +53,11 @@ local function onGameWorld(miniMenu)
     return false
 end
 
----Gets the chunk ID at the given coordinate.
----@param coord table|nil
----@return integer|nil id
-local function chunkAt(coord)
-    if coord == nil then return nil end
-    if not Overworld.applies(coord, Settings.get("overworldDetection")) then return nil end
-    return Chunk.idFromCoord(coord)
-end
-
 ---Toggles a chunk to either lock/unlock.
----@param id integer
-local function toggleChunk(id)
-    if State.toggle(id) then
-        UI.announceUnlock(id)
+---@param chunk table
+local function toggleChunk(chunk)
+    if State.toggle(chunk) then
+        UI.announceUnlock(chunk.id)
     end
 end
 
@@ -78,14 +69,17 @@ local function onReady(event)
     if not modifiersDown() then return end
     if not onGameWorld(miniMenu) then return end
 
-    local id = chunkAt(cursorCoord())
-    if id == nil then return end
+    -- Only chunks that can be locked/unlocked get an entry.
+    local coord = cursorCoord()
+    if coord == nil then return end
+    local chunk = Chunk.atTile(coord)
+    if not Overworld.applies(chunk, Settings.get("overworldDetection")) then return end
 
-    local label = State.isUnlockedChunkID(id)
-        and string.format("Lock chunk %d", id)
-        or string.format("Unlock chunk %d", id)
+    local label = State.isUnlockedChunk(chunk)
+        and string.format("Lock chunk %d", chunk.id)
+        or string.format("Unlock chunk %d", chunk.id)
 
-    miniMenu:Add(label, toggleChunk, id)
+    miniMenu:Add(label, toggleChunk, chunk)
 end
 
 ---Starts the minimenu.

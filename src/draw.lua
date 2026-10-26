@@ -17,12 +17,12 @@
 -- The logic that handles the drawing, caching, and rebuilding for a chunk is
 -- found in drawShape.
 
+local Chunk = require("src/chunk")
 local Mesh = require("src/mesh")
 local Settings = require("src/settings")
 
 local Draw = {}
 
--- TODO: Get a better setup for these constants.
 local UNITS_PER_LINE_WIDTH = 32.0
 
 -- Clearance given to the box and line so they don't flicker/collide with
@@ -35,8 +35,7 @@ local LINE_CLEARANCE = BOX_CLEARANCE + 4.0
 -- is needed for is to make sure the grid lines are always visible through the
 -- transparent boxes. Otherwise, if the volume creeps up too high, we'll start losing the
 -- grid (also why volume has a height limit).
-local BOX_REFERENCE_HEIGHT = 1000.0 * Mesh.UNITS_PER_TILE
-Draw.MAX_FILL_HEIGHT = BOX_REFERENCE_HEIGHT
+Draw.BOX_REFERENCE_HEIGHT = 1000.0 * Chunk.UNITS_PER_TILE
 
 local shapes = {}
 local serial = 0
@@ -58,10 +57,10 @@ end
 
 ---Builds a mesh for a box/volume.
 ---@return table|nil mesh, whose finish() gives a new ShapeData each call
-local function buildBox(level, chunkX, chunkZ)
-    local mesh = Mesh.new(level, chunkX, chunkZ)
+local function buildBox(level, chunk)
+    local mesh = Mesh.new(level, chunk)
     local samples = Settings.get("boxSamples")
-    local lidHeight = BOX_CLEARANCE + BOX_REFERENCE_HEIGHT
+    local lidHeight = BOX_CLEARANCE + Draw.BOX_REFERENCE_HEIGHT
 
     -- Build the lid as a grid above some sampled ground then create all the
     -- quads that make up the lid using the mesh vertices.
@@ -81,7 +80,7 @@ local function buildBox(level, chunkX, chunkZ)
         local previousBottom, previousLid
         for i = 0, samples do
             local lidVertex = lidVertexAt(i)
-            local bottomVertex = mesh.below(lidVertex, BOX_REFERENCE_HEIGHT)
+            local bottomVertex = mesh.below(lidVertex, Draw.BOX_REFERENCE_HEIGHT)
             if previousBottom ~= nil then
                 mesh.quad(previousBottom, bottomVertex, lidVertex, previousLid)
             end
@@ -104,11 +103,11 @@ end
 ---They all draw, but the line stays thin at any lineWidth settings.
 ---@param width number ribbon width, in world units
 ---@return table|nil
-local function buildOutline(level, chunkX, chunkZ, width)
-    local mesh = Mesh.new(level, chunkX, chunkZ)
+local function buildOutline(level, chunk, width)
+    local mesh = Mesh.new(level, chunk)
     local half = width * 0.5
     local x0, z0 = mesh.originX, mesh.originZ
-    local x1, z1 = x0 + Mesh.UNITS_PER_CHUNK, z0 + Mesh.UNITS_PER_CHUNK
+    local x1, z1 = x0 + Chunk.UNITS_PER_CHUNK, z0 + Chunk.UNITS_PER_CHUNK
 
     -- The four edges of the chunk, each as its two ends and a unit vector
     -- across it for handling the width: south, north, west, east.
@@ -271,15 +270,15 @@ end
 ---The request variable specifies exactly what needs to be built and with
 ---what paremeters. The drawShape function then handles the actual drawing.
 ---@param request table {
----           level, chunkX, chunkZ,
+---           level, chunk,
 ---           fillRGBA?, fillHeight?,
 ---           volumeRGBA?, volumeHeight?, outlineRGBA?, lineWidth?
 ---       }
 ---@return boolean drewSomething
 function Draw.Chunk(request)
     local level = request.level
-    local chunkX, chunkZ = request.chunkX, request.chunkZ
-    local originX, originZ = chunkX * Mesh.UNITS_PER_CHUNK, chunkZ * Mesh.UNITS_PER_CHUNK
+    local chunk = request.chunk
+    local originX, originZ = chunk:worldOrigin()
     local drew = false
 
     ---Used to share the box built between the ground and volume so we
@@ -288,7 +287,7 @@ function Draw.Chunk(request)
     local function buildBoxOnce()
         if not boxBuilt then
             boxBuilt = true
-            boxMesh = buildBox(level, chunkX, chunkZ)
+            boxMesh = buildBox(level, chunk)
         end
         if boxMesh == nil then return nil end
         return boxMesh.finish()
@@ -296,12 +295,12 @@ function Draw.Chunk(request)
 
     ---Helper for building the box and handling lid height.
     local function box(name, colour, lid)
-        if lid > BOX_REFERENCE_HEIGHT then lid = BOX_REFERENCE_HEIGHT end
-        local key = string.format("%s:%d:%d:%d", name, level, chunkX, chunkZ)
+        if lid > Draw.BOX_REFERENCE_HEIGHT then lid = Draw.BOX_REFERENCE_HEIGHT end
+        local key = string.format("%s:%d:%d", name, level, chunk.id)
         drew = drawShape(
             key, "box" .. Settings.get("boxSamples"),
             buildBoxOnce,
-            originX, lid - BOX_REFERENCE_HEIGHT, originZ,
+            originX, lid - Draw.BOX_REFERENCE_HEIGHT, originZ,
             colour, function() return boxBuilt end
         ) or drew
     end
@@ -318,12 +317,12 @@ function Draw.Chunk(request)
 
     -- Draw the outline, shapes get rebuilt on width changes
     if request.outlineRGBA ~= nil and request.lineWidth > 0.0 then
-        local key = string.format("line:%d:%d:%d", level, chunkX, chunkZ)
+        local key = string.format("line:%d:%d", level, chunk.id)
         local width = request.lineWidth * UNITS_PER_LINE_WIDTH
         -- The ribbon's width and sampling are geometry, so both are in the signature.
         drew = drawShape(
             key, "w" .. width .. "s" .. Settings.get("lineSamples"),
-            function() return buildOutline(level, chunkX, chunkZ, width) end,
+            function() return buildOutline(level, chunk, width) end,
             originX, 0.0, originZ,
             request.outlineRGBA, nil
         ) or drew
