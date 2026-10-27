@@ -193,11 +193,16 @@ function SettingsForm.build(view, panelWidth)
     local handle = {}
 
     view:AddDivider()
-    local reset = view:AddSimpleButton("Reset to defaults", function()
-        Settings.reset()
+    local reset = view:AddSimpleButton("Reset visuals", function()
+        Settings.reset({ "looks", "advanced" })
         handle.refresh()
     end, { width = RESET_WIDTH })
-    reset:SetTooltip({ text = "Put every setting back to its default value.", maxWidth = TOOLTIP_WIDTH })
+    reset:SetTooltip({ text = "Resets visual settings.", maxWidth = TOOLTIP_WIDTH })
+    local resetRegions = view:AddSimpleButton("Reset chunks", function()
+        Settings.reset({ "regions" })
+        handle.refresh()
+    end, { width = RESET_WIDTH })
+    resetRegions:SetTooltip({ text = "Resets chunks and region settings.", maxWidth = TOOLTIP_WIDTH })
 
     -- Do refreshes here to update settings that may have been changed
     -- from elsewhere. Don't need callbacks in those cases.

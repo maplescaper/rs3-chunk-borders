@@ -174,12 +174,15 @@ function Settings.set(key, value)
     return true
 end
 
----Resets all settings to default then runs the listeners for them.
----@param groupID string|nil
-function Settings.reset(groupID)
+---Resets the given groups to default then runs the listeners for them.
+---@param groupIDs string[]
+function Settings.reset(groupIDs)
+    local groupsToReset = {}
+    for _, id in ipairs(groupIDs) do groupsToReset[id] = true end
+
     local touched = {}
     for _, group in ipairs(Settings.groups) do
-        if not groupID or group.id == groupID then
+        if groupsToReset[group.id] then
             for _, entry in ipairs(group.entries) do
                 if values[entry.key] ~= entry.default then
                     values[entry.key] = entry.default
