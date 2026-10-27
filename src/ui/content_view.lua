@@ -13,12 +13,12 @@ local LABEL_HEIGHT = 24
 local VIEW_PADDING = 24
 local SCROLLBAR_WIDTH = 16
 
----String for the current chunk ID.
+---String for the current chunk as its Chunk Picker ID.
 ---@return string
 local function chunkText()
-    local id = Overlay.currentChunkID()
-    if id == nil then return "Current chunk: unavailable" end
-    return string.format("Current chunk: %d", id)
+    local chunk = Overlay.currentChunk()
+    if chunk == nil then return "Current chunk: unavailable" end
+    return string.format("Current chunk: %d", chunk:pickerID())
 end
 
 ---String for the current number of chunks unlocked.

@@ -5,9 +5,9 @@
 -- The term grid here refers to the chunk grid, or a grid of 64x64-tile chunks.
 -- Tile refers to an in-game coordinate (like the play position).
 --
--- A chunk ID is gridX * 256 + gridZ, mostly the same ID the Chunk Picker uses.
--- Existing chunk lists paste straight in except for a few regions the
--- picker stores at a constant offset, which Chunk.pickerToGameID corrects.
+-- A chunk ID is gridX * 256 + gridZ. The plugin holds in-game IDs, while the
+-- player only ever sees and types Chunk Picker IDs. The two agree except for
+-- a few regions.
 
 local Chunk = {}
 Chunk.__index = Chunk
@@ -16,6 +16,17 @@ Chunk.TILES_PER_CHUNK = 64
 Chunk.CHUNKS_PER_AXIS = 256
 Chunk.UNITS_PER_TILE = 512.0
 Chunk.UNITS_PER_CHUNK = Chunk.UNITS_PER_TILE * Chunk.TILES_PER_CHUNK
+
+-- Chunk Picker -> in-game chunk-ID remap. The picker uses the world map but
+-- in-game these areas are at completely different chunk IDs so we need to
+-- remap. First two numbers are the bounding box, and the third is an offset
+-- to translate a picker ID: in-game = picker + offset
+Chunk.PICKER_REMAP = {
+    { 14870, 18212, -7785 },   -- Arc Islands
+    { 14655, 16967,  5857 },   -- Anachronia
+    { 16176, 17720, -2844 },   -- Havenhythe
+    {  7471,  7986, -2265 },   -- Lost Grove
+}
 
 -- Every chunk object made so far, by ID, so that lookups share one object.
 local chunksByID = {}
@@ -60,6 +71,19 @@ function Chunk.atTile(coord)
     )
 end
 
+---The chunk a Chunk Picker ID names.
+---@param pickerID integer
+---@return table chunk
+function Chunk.atPickerID(pickerID)
+    local chunk = Chunk.atID(pickerID)
+    for _, remap in ipairs(Chunk.PICKER_REMAP) do
+        if chunk:inBox(remap[1], remap[2]) then
+            return Chunk.atID(chunk.id + remap[3])
+        end
+    end
+    return chunk
+end
+
 ---A fresh chunk object. Callers go through Chunk.atGrid, Chunk.atID or
 ---Chunk.atTile instead, so that two lookups of the same chunk share one object.
 ---@param gridX integer
@@ -100,32 +124,22 @@ function Chunk:inBox(loID, hiID)
     return self.gridX >= ax and self.gridX <= bx and self.gridZ >= az and self.gridZ <= bz
 end
 
--- Chunk Picker -> in-game chunk-ID remap. The picker stores a
--- handful of regions at a different ID offset than the game.
-Chunk.PICKER_REMAP = {
-    { 14870, 18212, -7785 },   -- Arc Islands
-    { 14655, 16967,  5857 },   -- Anachronia
-    { 16176, 17720, -2844 },   -- Havenhythe
-    {  7471,  7986, -2265 },   -- Lost Grove
-}
-
----Uses the picker remap above to map a chunk picker ID to an in-game one.
----@param id integer a Chunk Picker chunk ID
----@return integer the in-game chunk ID
-function Chunk.pickerToGameID(id)
-    local chunk = Chunk.atID(id)
+---The ID the Chunk Picker shows for this chunk.
+---@return integer
+function Chunk:pickerID()
     for _, remap in ipairs(Chunk.PICKER_REMAP) do
-        if chunk:inBox(remap[1], remap[2]) then
-            return chunk.id + remap[3]
+        if self:inBox(remap[1] + remap[3], remap[2] + remap[3]) then
+            return self.id - remap[3]
         end
     end
-    return chunk.id
+    return self.id
 end
 
----Junk tokens and negatives are dropped rather than raising because this
----parses a text field a player typed.
+---Parses a comma-separated list of chunk IDs as written. Junk tokens and
+---negatives are dropped rather than raising because this parses text a
+---player typed.
 ---@param text string|nil
----@return integer[]
+---@return integer[] sorted, without duplicates
 function Chunk.parseList(text)
     local seen, ids = {}, {}
 
@@ -145,13 +159,40 @@ function Chunk.parseList(text)
     return ids
 end
 
----Formats the chunk IDs into a list for display or storage.
+---Formats chunk IDs into a comma-separated list as they are.
 ---@param ids integer[]
 ---@return string
 function Chunk.formatList(ids)
     local parts = {}
     for index, id in ipairs(ids) do parts[index] = tostring(id) end
     return table.concat(parts, ", ")
+end
+
+---Parses a list the player typed (assumes always Chunk Picker IDs) into the
+---in-game IDs the plugin holds.
+---@param text string|nil
+---@return integer[] in-game IDs, sorted, without duplicates
+function Chunk.parsePickerList(text)
+    local seen, ids = {}, {}
+    for _, pickerID in ipairs(Chunk.parseList(text)) do
+        local id = Chunk.atPickerID(pickerID).id
+        if not seen[id] then
+            seen[id] = true
+            ids[#ids + 1] = id
+        end
+    end
+    table.sort(ids)
+    return ids
+end
+
+---Formats in-game chunk IDs as the Chunk Picker IDs the player sees.
+---@param ids integer[] in-game IDs
+---@return string
+function Chunk.formatPickerList(ids)
+    local pickerIDs = {}
+    for index, id in ipairs(ids) do pickerIDs[index] = Chunk.atID(id):pickerID() end
+    table.sort(pickerIDs)
+    return Chunk.formatList(pickerIDs)
 end
 
 return Chunk

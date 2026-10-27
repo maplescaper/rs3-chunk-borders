@@ -226,12 +226,12 @@ function Overlay.frame()
     return summary
 end
 
----Returns the current chunk ID the player is in.
----@return integer|nil
-function Overlay.currentChunkID()
+---The chunk the player is standing in.
+---@return table|nil chunk
+function Overlay.currentChunk()
     local coord = playerCoord()
     if coord == nil then return nil end
-    return Chunk.atTile(coord).id
+    return Chunk.atTile(coord)
 end
 
 return Overlay

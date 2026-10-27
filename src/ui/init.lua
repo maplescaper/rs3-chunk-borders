@@ -26,7 +26,7 @@ local mounted = {
     settings = nil,
     content = nil,
 }
-local lastChunkID = nil
+local lastChunk = nil
 
 -- Number of frames with no resize before we start drawing the settings again.
 local QUIET_FRAMES = 10
@@ -84,22 +84,22 @@ end
 ---Only touches the UI when the player's chunk actually changed.
 function UI.tick()
     if mounted.content == nil then return end
-    local id = Overlay.currentChunkID()
-    if id == lastChunkID then return end
-    lastChunkID = id
+    local chunk = Overlay.currentChunk()
+    if chunk == lastChunk then return end
+    lastChunk = chunk
     UI.refresh()
 end
 
 ---The unlock celebration, for a chunk unlocked in game with Shift +
----right-click.
----@param id integer
-function UI.announceUnlock(id)
+---right-click (uses the Chunk Picker ID).
+---@param chunk table
+function UI.announceUnlock(chunk)
     if Settings.get("showPopups") ~= true then return end
     if not Library.available() then return end
     pcall(function()
         Library.get().AchievementPopup.show({
             title = "Chunk unlocked",
-            text = string.format("Chunk %d is now open.", id),
+            text = string.format("Chunk %d is now open.", chunk:pickerID()),
         })
     end)
 end
@@ -122,7 +122,7 @@ local function onMountFrame()
     Event.Draw.Unsubscribe(MOUNT_EVENT_ID)
 
     mount("content", component, ContentView.build)
-    lastChunkID = Overlay.currentChunkID()
+    lastChunk = Overlay.currentChunk()
 end
 
 ---Schedules a component mount (to handle resizing issues). Resets quiet
@@ -165,7 +165,7 @@ function UI.unmount()
         mounted[name] = nil
     end
 
-    lastChunkID = nil
+    lastChunk = nil
 end
 
 ---Handles destroying the UI.

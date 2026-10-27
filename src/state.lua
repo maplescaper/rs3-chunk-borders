@@ -1,8 +1,8 @@
 -- Handles the current state of locked/unlocked chunks along with helpers.
 --
--- The unlocked list is stored as chunk IDs, since that is what the settings
--- field and the chunk picker speak. In memory it is also held as a set keyed
--- by Chunk object, which is what the drawing code asks about.
+-- The unlocked list is stored as in-game chunk IDs. Anything the player types
+-- is assumed to be Chunk Picker IDs and converted to in-game IDs. We also
+-- always show these IDs as Chunk Picker IDs to the user.
 
 local Chunk = require("src/chunk")
 local Settings = require("src/settings")
@@ -99,41 +99,24 @@ function State.appendList(ids)
     return added
 end
 
----Converts new IDs added through the settings panel into in-game IDs.
----Only what is new is converted to in-game IDs.
----@param ids integer[]
----@return integer[] sorted, without duplicates
-function State.convertNew(ids)
-    local known = {}
-    for _, id in ipairs(State.unlockedIDs) do known[id] = true end
-    local seen, out = {}, {}
-    for _, id in ipairs(ids) do
-        if not known[id] then id = Chunk.pickerToGameID(id) end
-        if not seen[id] then
-            seen[id] = true
-            out[#out + 1] = id
-        end
-    end
-    table.sort(out)
-    return out
-end
-
----Sets a parsed, converted list of chunk IDs into the settings.
+---Replaces the unlocked list with the one input. Assumes the input is in
+---Chunk Picker IDs.
 ---@param text string
 function State.commitList(text)
-    Settings.set(
-        "unlockedChunkIds",
-        Chunk.formatList(State.convertNew(Chunk.parseList(tostring(text or ""))))
-    )
+    Settings.set("unlockedChunkIds", Chunk.formatList(Chunk.parsePickerList(text)))
 end
 
----Adds the chunks from a pasted string to what is already unlocked.
+---Adds a list of chunks, in Chunk Picker IDs, to what is already unlocked.
 ---@param text string
 ---@return integer how many were not already unlocked
 function State.pasteList(text)
-    text = tostring(text or "")
-    if text == "" then return 0 end
-    return State.appendList(State.convertNew(Chunk.parseList(text)))
+    return State.appendList(Chunk.parsePickerList(text))
+end
+
+---The unlocked list as Chunk Picker IDs for displaying.
+---@return string
+function State.pickerList()
+    return Chunk.formatPickerList(State.unlockedIDs)
 end
 
 ---Initialize the State.

@@ -27,6 +27,15 @@ local function numberText(entry, value)
     return string.format("%.2f", value)
 end
 
+---What a text field shows. The unlocked list is held as in-game chunk IDs
+---but shown as Chunk Picker IDs, see state.lua.
+---@param key string
+---@return string
+local function fieldText(key)
+    if key == "unlockedChunkIds" then return State.pickerList() end
+    return Settings.get(key)
+end
+
 ---Use to prevent a value from exceeding requested max/mins.
 ---@param entry table
 ---@param value number
@@ -132,8 +141,8 @@ function SettingsForm.build(view, panelWidth)
                     maxLines = 1,
                 })
 
-                -- Chunk IDs need some extra parsing/formatting before being
-                -- commited into the Settings.
+                -- Chunk IDs are typed as Chunk Picker IDs and need converting
+                -- before being committed into the Settings.
                 local commit = function(content)
                     if key == "unlockedChunkIds" then
                         State.commitList(content)
@@ -145,12 +154,12 @@ function SettingsForm.build(view, panelWidth)
                 end
 
                 fields[key] = view:AddTextField({
-                    text = Settings.get(key),
+                    text = fieldText(key),
                     placeholder = entry.placeholder,
                     maxLength = entry.maxLength,
                     onSubmit = function(field, content)
                         commit(content)
-                        field:SetText(Settings.get(key), false)
+                        field:SetText(fieldText(key), false)
                     end,
                 })
                 fields[key]:SetTooltip({ text = entry.tooltip, maxWidth = TOOLTIP_WIDTH })
@@ -200,7 +209,7 @@ function SettingsForm.build(view, panelWidth)
             number.field:SetText(numberText(number.entry, Settings.get(key)), false)
         end
         for key, field in pairs(fields) do
-            field:SetText(Settings.get(key), false)
+            field:SetText(fieldText(key), false)
         end
         for key, picker in pairs(pickers) do
             picker:SetValue(Settings.get(key), false)

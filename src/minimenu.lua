@@ -57,7 +57,7 @@ end
 ---@param chunk table
 local function toggleChunk(chunk)
     if State.toggle(chunk) then
-        UI.announceUnlock(chunk.id)
+        UI.announceUnlock(chunk)
     end
 end
 
@@ -76,8 +76,8 @@ local function onReady(event)
     if not Overworld.applies(chunk, Settings.get("overworldDetection")) then return end
 
     local label = State.isUnlockedChunk(chunk)
-        and string.format("Lock chunk %d", chunk.id)
-        or string.format("Unlock chunk %d", chunk.id)
+        and string.format("Lock chunk %d", chunk:pickerID())
+        or string.format("Unlock chunk %d", chunk:pickerID())
 
     miniMenu:Add(label, toggleChunk, chunk)
 end

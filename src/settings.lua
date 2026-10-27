@@ -24,10 +24,10 @@ Settings.groups = {
               tooltip = "Disable to stop showing achievement popups." },
             { key = "unlockedChunkIds", name = "Unlocked chunks", type = "text", default = "",
               placeholder = "16179,16180,16434", maxLength = 1000000,
-              tooltip = "Holds the unlocked chunk IDs. Paste a list of chunk IDs in here from the RS3 chunk picker." },
+              tooltip = "Unlocked chunks as Chunk Picker IDs." },
             { key = "pasteChunkIds", name = "Add chunks", type = "text", default = "",
               placeholder = "16179,16180,16434,16435,16436", maxLength = 1000000,
-              tooltip = "Can be used to append new chunk IDs to the unlocked list." },
+              tooltip = "Add new Chunk Picker IDs to the unlocked list." },
         },
     },
     {
