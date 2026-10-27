@@ -7,6 +7,7 @@
 -- workaround, we stop drawing the settings panel while the plugin menu is
 -- being resized. An issue was filed on the PrettyUI repo about this.
 
+local Confirm = require("src/ui/confirm")
 local ContentView = require("src/ui/content_view")
 local Library = require("src/ui/prettyui")
 local Overlay = require("src/overlay")
@@ -150,8 +151,12 @@ function UI.init()
     return onSettingChanged
 end
 
----Destroy all the components.
+---Destroy all the components. Prompt stays open if we don't close it here
+---as well.
 function UI.unmount()
+    -- Close any open prompt
+    Confirm.close()
+
     -- Cancel any pending mount
     if pendingContent ~= nil then
         pendingContent = nil

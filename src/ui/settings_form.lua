@@ -1,6 +1,7 @@
 -- This builds the settings panel in the Plugins menu. The 
 -- Settings are gathered from the groupings in settings.lua.
 
+local Confirm = require("src/ui/confirm")
 local Settings = require("src/settings")
 local State = require("src/state")
 
@@ -199,8 +200,15 @@ function SettingsForm.build(view, panelWidth)
     end, { width = RESET_WIDTH })
     reset:SetTooltip({ text = "Resets visual settings.", maxWidth = TOOLTIP_WIDTH })
     local resetRegions = view:AddSimpleButton("Reset chunks", function()
-        Settings.reset({ "regions" })
-        handle.refresh()
+        Confirm.show({
+            title = "Reset chunks",
+            text = "Warning! This will reset all your unlocked chunks. ",
+            confirmLabel = "Reset",
+            onConfirm = function()
+                Settings.reset({ "regions" })
+                handle.refresh()
+            end,
+        })
     end, { width = RESET_WIDTH })
     resetRegions:SetTooltip({ text = "Resets chunks and region settings.", maxWidth = TOOLTIP_WIDTH })
 
