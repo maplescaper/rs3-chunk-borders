@@ -27,17 +27,6 @@ local function numberText(entry, value)
     return string.format("%.2f", value)
 end
 
----Steps provider for the +/- buttons.
----@param entry table
----@return number
-local function stepFor(entry)
-    if entry.step then return entry.step end
-    if entry.type == "int" then return 1 end
-    local span = (entry.max or 1) - (entry.min or 0)
-    return span <= 1 and 0.05 or 0.5
-end
-
-
 ---Use to prevent a value from exceeding requested max/mins.
 ---@param entry table
 ---@param value number
@@ -93,14 +82,13 @@ function SettingsForm.build(view, panelWidth)
                     maxLines = 1,
                 })
 
-                -- Declare box (text input field) early. It exists by the time it's used.
                 local box
                 local function apply(value)
                     Settings.set(key, clamp(entry, value))
                     box:SetText(numberText(entry, Settings.get(key)), false)
                 end
 
-                local step = stepFor(entry)
+                local step = entry.step or 1
                 local boxWidth = labelWidth - 2 * (STEP_WIDTH + COLUMN_GAP)
 
                 -- Make the - button

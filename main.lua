@@ -27,7 +27,7 @@ end)
 Event.GameStateChanged.Subscribe(EVENT_ID, function(event)
     -- If we're not in game, reset everything.
     if event.newState ~= GameState.GAME then
-        Draw.Reset()
+        Draw.reset()
         Overlay.resetTracking()
         UI.unmount()
     end
@@ -40,5 +40,5 @@ function PluginShutdown()
     Settings.subscribe("*", nil)
     Minimenu.shutdown()
     UI.shutdown()
-    Draw.Reset()
+    Draw.reset()
 end

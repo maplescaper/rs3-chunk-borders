@@ -11,7 +11,7 @@
 --
 -- The drawing process has a frame budget that dictates how much sampling we can do per
 -- frame as well to try to limit the impact on sudden world shifts. This is handled through
--- the draw cycle: Draw.BeginFrame, Draw.Chunk, and Draw.EndFrame. Overlay.frame
+-- the draw cycle: Draw.beginFrame, Draw.chunk, and Draw.endFrame. Overlay.frame
 -- handles calling these. That budget is counted within the mesh.lua file.
 --
 -- The logic that handles the drawing, caching, and rebuilding for a chunk is
@@ -151,7 +151,7 @@ local function buildOutline(level, chunk, width)
 end
 
 ---Brings an existing shape in line with what this frame asks of it and
----marks it as seen so EndFrame keeps it.
+---marks it as seen so Draw.endFrame keeps it.
 ---@param entry table
 ---@param x number
 ---@param y number
@@ -258,9 +258,9 @@ local function drawShape(key, signature, build, x, y, z, colour, free)
     return true
 end
 
----Marks the start of a frame draw. After this Draw.Chunk is called,
----then Draw.EndFrame to complete the draw cycle.
-function Draw.BeginFrame()
+---Marks the start of a frame draw. After this Draw.chunk is called,
+---then Draw.endFrame to complete the draw cycle.
+function Draw.beginFrame()
     frame = frame + 1
     Mesh.resetSamples()
 end
@@ -275,7 +275,7 @@ end
 ---           volumeRGBA?, volumeHeight?, outlineRGBA?, lineWidth?
 ---       }
 ---@return boolean drewSomething
-function Draw.Chunk(request)
+function Draw.chunk(request)
     local level = request.level
     local chunk = request.chunk
     local originX, originZ = chunk:worldOrigin()
@@ -333,7 +333,7 @@ end
 
 ---Concludes the drawing process.
 ---@return integer reaped
-function Draw.EndFrame()
+function Draw.endFrame()
     local reaped = 0
 
     -- Destroy any shapes from previous frame drawings.
@@ -354,7 +354,7 @@ function Draw.EndFrame()
 end
 
 ---Destroy all the shapes and reset the drawing process.
-function Draw.Reset()
+function Draw.reset()
     for _, entry in pairs(shapes) do destroyShape(entry.shape) end
     shapes = {}
     retryAt = {}

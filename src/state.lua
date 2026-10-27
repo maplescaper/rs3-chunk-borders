@@ -77,11 +77,9 @@ end
 ---@return integer added how many were not already unlocked
 function State.appendList(ids)
     local known, order = {}, {}
-    for _, id in ipairs(State.unlockedIDs) do
-        if not known[id] then
-            known[id] = true
-            order[#order + 1] = id
-        end
+    for index, id in ipairs(State.unlockedIDs) do
+        known[id] = true
+        order[index] = id
     end
 
     local added = 0

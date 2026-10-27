@@ -50,8 +50,9 @@ local function mount(name, component, build)
     release(mounted[name])
     mounted[name] = nil
 
-    local ok = pcall(function()
-        local view = Library.get().SimpleView.new(component, {
+    local view
+    local ok, err = pcall(function()
+        view = Library.get().SimpleView.new(component, {
             width = component.width,
             height = component.height,
             scrollable = true,
@@ -66,8 +67,8 @@ local function mount(name, component, build)
     end)
 
     if not ok then
-        release(mounted[name])
         mounted[name] = nil
+        if view then view:Destroy() end
     end
 end
 

@@ -121,7 +121,7 @@ local function drawFrame(summary)
     if groundUnder(coord) == nil then
         staleFrames = staleFrames + 1
         if staleFrames % STALE_RESET_FRAMES == 0 then
-            Draw.Reset()
+            Draw.reset()
             Overlay.staleResets = Overlay.staleResets + 1
         end
     else
@@ -195,7 +195,7 @@ local function drawFrame(summary)
         end
 
         -- Draw everything that was requested
-        if Draw.Chunk(request) then
+        if Draw.chunk(request) then
             summary.drawn = summary.drawn + 1
             if locked then summary.filled = summary.filled + 1 end
         end
@@ -220,9 +220,9 @@ end
 ---@return table summary { drawn, filled, skipped, fillHeight, trackingCamera }
 function Overlay.frame()
     local summary = { drawn = 0, filled = 0 }
-    Draw.BeginFrame()
+    Draw.beginFrame()
     summary.skipped = drawFrame(summary)
-    Draw.EndFrame()
+    Draw.endFrame()
     return summary
 end
 
