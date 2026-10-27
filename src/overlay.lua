@@ -26,13 +26,6 @@ local function playerCoord()
     return entity.coordGrid
 end
 
----Return the camera height if it's available.
----@return number|nil
-local function cameraHeight()
-    if not Camera.IsAvailable() then return nil end
-    return Camera.GetPosition().y
-end
-
 ---Helper to get ground height at a specific coord.
 ---@param coord table CoordGrid-like (absolute tile .x/.z, plus .level)
 ---@return number|nil
@@ -50,13 +43,28 @@ end
 ---@param margin number how far below the camera to hold the lid, in world units
 ---@return number height, boolean tracking
 local function fillHeightFor(coord, margin)
-    local eye = cameraHeight()
-    if eye == nil then return FILL_MIN_LID, false end
-    local ground = groundUnder(coord)
+    local camera = nil
+    if Camera.IsAvailable() then
+        camera = Camera.GetPosition()
+    end
+    if camera == nil then return FILL_MIN_LID, false end
+
+    -- Fallback on player's tile ground height if camera doesn't have one
+    local ground = nil
+    if camera.x ~= nil and camera.z ~= nil then
+        local height, available = World.GetGroundHeight(coord.level or 0, camera.x, camera.z)
+        if available then
+            ground = height
+        end
+    else
+        ground = groundUnder(coord)
+    end
     if ground == nil then return FILL_MIN_LID, false end
 
-    -- Determine the height based on the settings and min/maxs
-    local wanted = eye - ground - margin
+    -- Determine the height based on the settings and min/maxs. The lid is
+    -- built BOX_CLEARANCE above the height asked for, so that comes off too,
+    -- or a zero margin would leave the lid just above the camera.
+    local wanted = camera.y - ground - margin - Draw.BOX_CLEARANCE
     if wanted > Draw.BOX_REFERENCE_HEIGHT then wanted = Draw.BOX_REFERENCE_HEIGHT end
     if wanted < FILL_MIN_LID then wanted = FILL_MIN_LID end
 
@@ -116,7 +124,7 @@ local function drawFrame(summary)
         return "off-map"
     end
 
-    -- If the ground height under the camera is unavailable for some time, reset all the shapes.
+    -- If the ground height under the player is unavailable for some time, reset all the shapes.
     -- Used to prevent making shapes based on bad world data that then don't get displayed.
     if groundUnder(coord) == nil then
         staleFrames = staleFrames + 1

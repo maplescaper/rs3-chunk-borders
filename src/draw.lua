@@ -27,8 +27,8 @@ local UNITS_PER_LINE_WIDTH = 32.0
 
 -- Clearance given to the box and line so they don't flicker/collide with
 -- the terrain. Causes flickering when moving the camera without this.
-local BOX_CLEARANCE = 30.0
-local LINE_CLEARANCE = BOX_CLEARANCE + 4.0
+Draw.BOX_CLEARANCE = 30.0
+local LINE_CLEARANCE = Draw.BOX_CLEARANCE + 4.0
 
 -- Every box is built this tall and pushed down by the difference, so we only
 -- need to do height translations based on camera movements. The other thing this
@@ -60,7 +60,7 @@ end
 local function buildBox(level, chunk)
     local mesh = Mesh.new(level, chunk)
     local samples = Settings.get("boxSamples")
-    local lidHeight = BOX_CLEARANCE + Draw.BOX_REFERENCE_HEIGHT
+    local lidHeight = Draw.BOX_CLEARANCE + Draw.BOX_REFERENCE_HEIGHT
 
     -- Build the lid as a grid above some sampled ground then create all the
     -- quads that make up the lid using the mesh vertices.
