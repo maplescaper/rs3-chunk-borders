@@ -68,3 +68,12 @@ When adding anything new that involves drawing, make sure that you **keep perfor
 ### Limitations
 
 The official API only allows us to draw shapes so we are quite limited in terms of what we can draw in game. This means that you will see some graphical oddities when using this plugin that cannot be overcome with what we currently have. While we are looking into improvements, shader support is likely what we will wait for to get us to where we want to be in terms of how tinting works.
+
+### LLM Usage
+
+Contributing to Chunk Borders with the use of AI tools to assist in writing code is permitted. All contributions must be reviewed and approved by a human maintainer before landing.
+
+As LLMs can be quite verbose and over-confident in their statements (among other issues), do not:
+  * Let LLMs generate documentation for you. This includes function/code comments (apart from simple ones).
+  * Submit PRs generated completely by LLMs without human review. You must understand the code being submitted.
+  * Have an LLM generate your PR description. These tend to be too verbose with no substance.
