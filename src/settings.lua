@@ -36,6 +36,25 @@ Settings.groups = {
         entries = {
             { key = "greyLocked", name = "Chunk Shader", type = "bool", default = true,
               tooltip = "Disable to stop chunk grey-out/tinting." },
+            { key = "quickVisuals", name = "Quick Settings", type = "preset",
+              presets = {
+                { label = "Default", values = {} },
+                { label = "High Ground Shade", values = {
+                    lockedVolumeTiles = 1,
+                  }
+                },
+                { label = "Low Ground Shade", values = {
+                    fillCameraMargin = 9000,
+                    lockedVolume = false,
+                    boxSamples = 24,
+                  }
+                },
+                { label = "Limited Sky Shade", values = {
+                    lockedVolumeTiles = 15,
+                  }
+                },
+              },
+              tooltip = "Presets of settings for visuals." },
             { key = "lockedColour", name = "Shader colour", type = "colour", default = 0x000000BF,
               tooltip = "Colour of the locked chunks tint." },
             { key = "lockedVolumeOpacity", name = "Shader opacity", type = "float", default = 0.85, min = 0.0, max = 1.0, step = 0.05,

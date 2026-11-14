@@ -16,6 +16,8 @@ local STEP_WIDTH = 30
 local COLUMN_GAP = 6
 local NUMBER_LENGTH = 12
 local TOOLTIP_WIDTH = 180
+local LIST_ROW_HEIGHT = 24
+local LIST_BORDER = 2
 
 ---Helper to format numbers.
 ---@param entry table
@@ -164,6 +166,29 @@ function SettingsForm.build(view, panelWidth)
                     end,
                 })
                 fields[key]:SetTooltip({ text = entry.tooltip, maxWidth = TOOLTIP_WIDTH })
+
+            elseif entry.type == "preset" then
+                -- Used for the quick settings presets for visuals
+                view:AddText({
+                    text = entry.name,
+                    width = labelWidth,
+                    height = LABEL_HEIGHT,
+                    maxLines = 1,
+                    tooltip = { text = entry.tooltip, maxWidth = TOOLTIP_WIDTH },
+                })
+                view:AddList({
+                    width = labelWidth,
+                    height = #entry.presets * LIST_ROW_HEIGHT + LIST_BORDER,
+                    entryHeight = LIST_ROW_HEIGHT,
+                    entries = entry.presets,
+                    _onEntryClick = function(_, index)
+                        -- Reset, then set the preset values
+                        Settings.reset({"looks", "advanced"})
+                        for other, value in pairs(entry.presets[index].values) do
+                            Settings.set(other, value)
+                        end
+                    end,
+                })
 
             elseif entry.type == "colour" then
                 -- Add text describing the colour to change with the colour picker inline
