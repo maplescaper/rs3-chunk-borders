@@ -41,8 +41,9 @@ end
 ---height changes according to the camera height.
 ---@param coord table the player's coordinate
 ---@param margin number how far below the camera to hold the lid, in world units
+---@param ceiling number how high the lid can go in world units
 ---@return number height, boolean tracking
-local function fillHeightFor(coord, margin)
+local function fillHeightFor(coord, margin, ceiling)
     local camera = nil
     if Camera.IsAvailable() then
         camera = Camera.GetPosition()
@@ -65,7 +66,7 @@ local function fillHeightFor(coord, margin)
     -- built BOX_CLEARANCE above the height asked for, so that comes off too,
     -- or a zero margin would leave the lid just above the camera.
     local wanted = camera.y - ground - margin - Draw.BOX_CLEARANCE
-    if wanted > Draw.BOX_REFERENCE_HEIGHT then wanted = Draw.BOX_REFERENCE_HEIGHT end
+    if wanted > ceiling then wanted = ceiling end
     if wanted < FILL_MIN_LID then wanted = FILL_MIN_LID end
 
     return wanted, true
@@ -149,7 +150,8 @@ local function drawFrame(summary)
     -- chunk is greyed out under it. Otherwise if we end up inside the volume
     -- with the camera it looks like the chunk is unlocked.
     local fillHeight, tracking = fillHeightFor(
-        coord, Settings.get("fillCameraMargin") * Chunk.UNITS_PER_TILE
+        coord, Settings.get("fillCameraMargin") * Chunk.UNITS_PER_TILE,
+        asVolume and volumeHeight or Draw.BOX_REFERENCE_HEIGHT
     )
     summary.trackingCamera = tracking
     summary.fillHeight = fillHeight
