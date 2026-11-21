@@ -28,7 +28,7 @@ function Mesh.resetSamples() samplesThisFrame = 0 end
 ---@return table mesh
 function Mesh.new(level, chunk)
     local originX, originZ = chunk:worldOrigin()
-    local mesh = { originX = originX, originZ = originZ, positions = {}, tris = {} }
+    local mesh = { originX = originX, originZ = originZ, positions = {}, tris = {}, borrowed = {} }
 
     ---Returns the ground height at this location.
     ---@param worldX number world units
@@ -39,6 +39,42 @@ function Mesh.new(level, chunk)
         local height, available = World.GetGroundHeight(level, worldX, worldZ)
         if not available then return nil end
         return height
+    end
+
+    ---Fills in the height of every point where the terrain is not loaded from
+    ---the nearest point where it is. Needed for lower draw distances. The points filled are kept
+    ---in mesh.borrowed, so the shape can be rebuilt once their terrain loads.
+    ---@param points table[] { x, z, height|nil }, in world units
+    ---@return boolean any false when no point has a height
+    function mesh.fillMissing(points)
+        local known = {}
+        for _, point in ipairs(points) do
+            if point.height ~= nil then known[#known + 1] = point end
+        end
+        if #known == 0 then return false end
+
+        for _, point in ipairs(points) do
+            if point.height == nil then
+                local nearest, best = nil, math.huge
+                for _, candidate in ipairs(known) do
+                    local dx, dz = candidate.x - point.x, candidate.z - point.z
+                    local distance = dx * dx + dz * dz
+                    if distance < best then nearest, best = candidate, distance end
+                end
+                point.height = nearest.height
+                mesh.borrowed[#mesh.borrowed + 1] = point
+            end
+        end
+        return true
+    end
+
+    ---Whether terrain has loaded under any point that borrowed a height.
+    ---@return boolean
+    function mesh.terrainLoaded()
+        for _, point in ipairs(mesh.borrowed) do
+            if mesh.height(point.x, point.z) ~= nil then return true end
+        end
+        return false
     end
 
     ---Adds a new vertex to the positions.
@@ -95,22 +131,25 @@ function Mesh.new(level, chunk)
     ---Builds a grid on a chunk. Used for the lid and volumes.
     ---@param samples integer number of times we sample for the grid height for vertices
     ---@param clearance number baseline height above the ground for every vertex
-    ---@return integer|nil first index of the south-west vertex, nil when terrain is not loaded
+    ---@return integer|nil first index of the south-west vertex, nil when none of the terrain is loaded
     function mesh.grid(samples, clearance)
         local step = Chunk.UNITS_PER_CHUNK / samples
         local first = #mesh.positions
 
+        -- Sample the whole grid first, so points with no terrain loaded can
+        -- borrow the nearest loaded height.
+        local points = {}
         for row = 0, samples do
             for column = 0, samples do
-                -- Get the ground height at this location in the world
                 local worldX = originX + column * step
                 local worldZ = originZ + row * step
-                local height = mesh.height(worldX, worldZ)
-                if height == nil then return nil end
-
-                -- Add a vertex for it
-                mesh.vertex(worldX, height + clearance, worldZ)
+                points[#points + 1] = { x = worldX, z = worldZ, height = mesh.height(worldX, worldZ) }
             end
+        end
+        if not mesh.fillMissing(points) then return nil end
+
+        for _, point in ipairs(points) do
+            mesh.vertex(point.x, point.height + clearance, point.z)
         end
 
         return first

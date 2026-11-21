@@ -50,13 +50,19 @@ Draw.retryFrames = 12
 
 local retryAt = {}
 
+-- How often to check whether terrain has loaded under a partially built shape
+Draw.recheckFrames = 30
+
+-- Instances replaced by a rebuild this frame
+local retiring = {}
+
 ---Safe wrapper around the destroy shape call.
 local function destroyShape(shape)
     pcall(function() shape:Destroy() end)
 end
 
 ---Builds a mesh for a box/volume.
----@return table|nil mesh, whose finish() gives a new ShapeData each call
+---@return table|nil mesh nil when none of the terrain is loaded
 local function buildBox(level, chunk)
     local mesh = Mesh.new(level, chunk)
     local samples = Settings.get("boxSamples")
@@ -102,7 +108,7 @@ end
 ---TODO: Test more with ShapeData.lines, ShapeList.Draw, and ShapeList.DrawLine.
 ---They all draw, but the line stays thin at any lineWidth settings.
 ---@param width number ribbon width, in world units
----@return table|nil
+---@return table|nil mesh nil when none of the terrain is loaded
 local function buildOutline(level, chunk, width)
     local mesh = Mesh.new(level, chunk)
     local half = width * 0.5
@@ -118,23 +124,33 @@ local function buildOutline(level, chunk, width)
         { fromX = x1, fromZ = z0, toX = x1, toZ = z1, acrossX = -1.0, acrossZ = 0.0 },
     }
 
+    -- Sample every edge's centre line first, so points with no terrain loaded
+    -- can borrow the nearest loaded height.
+    local samples = Settings.get("lineSamples")
+    local centres = {}
     for _, edge in ipairs(edges) do
-        local offsetX, offsetZ = edge.acrossX * half, edge.acrossZ * half
-        local previous
-        local samples = Settings.get("lineSamples")
+        edge.centres = {}
         for sample = 0, samples do
             local ratio = sample / samples
             local centreX = edge.fromX + (edge.toX - edge.fromX) * ratio
             local centreZ = edge.fromZ + (edge.toZ - edge.fromZ) * ratio
-            local centreHeight = mesh.height(centreX, centreZ)
-            if centreHeight == nil then return nil end
+            local centre = { x = centreX, z = centreZ, height = mesh.height(centreX, centreZ) }
+            edge.centres[#edge.centres + 1] = centre
+            centres[#centres + 1] = centre
+        end
+    end
+    if not mesh.fillMissing(centres) then return nil end
 
+    for _, edge in ipairs(edges) do
+        local offsetX, offsetZ = edge.acrossX * half, edge.acrossZ * half
+        local previous
+        for _, centre in ipairs(edge.centres) do
             -- One vertex either side of the centre line. Each incorporates the ground
             -- under itself so the line travels with the terrain.
-            local leftX, leftZ = centreX + offsetX, centreZ + offsetZ
-            local rightX, rightZ = centreX - offsetX, centreZ - offsetZ
-            local leftHeight = mesh.height(leftX, leftZ) or centreHeight
-            local rightHeight = mesh.height(rightX, rightZ) or centreHeight
+            local leftX, leftZ = centre.x + offsetX, centre.z + offsetZ
+            local rightX, rightZ = centre.x - offsetX, centre.z - offsetZ
+            local leftHeight = mesh.height(leftX, leftZ) or centre.height
+            local rightHeight = mesh.height(rightX, rightZ) or centre.height
             local left = mesh.vertex(leftX, leftHeight + LINE_CLEARANCE, leftZ)
             local right = mesh.vertex(rightX, rightHeight + LINE_CLEARANCE, rightZ)
 
@@ -147,7 +163,7 @@ local function buildOutline(level, chunk, width)
         end
     end
 
-    return mesh.finish()
+    return mesh
 end
 
 ---Brings an existing shape in line with what this frame asks of it and
@@ -170,19 +186,40 @@ local function syncShape(entry, x, y, z, colour)
     entry.lastSeen = frame
 end
 
+---Builds a new instance holding this geometry.
+---@param shapeData table
+---@return table|nil shape
+local function createInstance(shapeData)
+    serial = serial + 1
+    local shape = ShapeList.CreateInstance(string.format("chunk_borders_%d", serial))
+    if shape == nil then return nil end
+    if not shape:SetShapeData(shapeData) then
+        destroyShape(shape)
+        return nil
+    end
+    shape.ignoreDepth = false
+    return shape
+end
+
+---Checks if we need to rebuild because new terrain loaded in.
+---@param entry table
+---@return boolean
+local function terrainArrived(entry)
+    if entry.recheckAt == nil or frame < entry.recheckAt then return false end
+    entry.recheckAt = frame + Draw.recheckFrames
+    return entry.mesh.terrainLoaded()
+end
+
 ---Draws one shape for this frame.
 ---
----Handles the full process. This includes skipping the build if the shape
----is in the cache, or if we've exceeded the frame budget. In that case, we
----show a previous build if it exists.
----
----Then we try building it, setup a retry if it fails, and finally cache the
----build so we can reuse it later. The syncShape method above handles both
----setting up a new build's parameters and updating an existing build.
+---Shows the cached shape when there is one for this signature or when the
+---frame budget is spent. Otherwise builds it, sets up a retry if that fails,
+---and caches it. Rebuilds draw the new shape first, then retires the
+---old shape next frame to prevent blinking.
 ---
 ---@param key string
 ---@param signature string
----@param build fun(): table|nil
+---@param build fun(): table|nil the mesh, nil when it could not be built
 ---@param x number translation
 ---@param y number
 ---@param z number
@@ -192,8 +229,8 @@ end
 local function drawShape(key, signature, build, x, y, z, colour, free)
     local entry = shapes[key]
 
-    -- If the shape already exists, show it again instead of building it
-    if entry ~= nil and entry.signature == signature then
+    -- Keep the same shape if terrain loaded hasn't changed
+    if entry ~= nil and entry.signature == signature and not terrainArrived(entry) then
         syncShape(entry, x, y, z, colour)
         return true
     end
@@ -212,49 +249,25 @@ local function drawShape(key, signature, build, x, y, z, colour, free)
         return true
     end
 
-    -- Build the shape now
-    local shapeData = build()
-
-    -- If the shape didn't get built
-    if shapeData == nil then
-
-        -- Setup up the retry if it's never been built
+    local mesh = build()
+    local shape = mesh ~= nil and createInstance(mesh.finish()) or nil
+    if shape == nil then
         if entry == nil then
             retryAt[key] = frame + Draw.retryFrames
             return false
         end
-
-        -- Or show what it was before the rebuild for now
+        -- Keep showing the old build for now
         syncShape(entry, x, y, z, colour)
-
         return true
     end
 
-    -- Make an instance and cache for the shape if it doesn't have one yet.
-    if entry == nil then
-        serial = serial + 1
-        local shape = ShapeList.CreateInstance(string.format("chunk_borders_%d", serial))
-        if shape == nil then return false end
-        entry = { shape = shape }
-        shapes[key] = entry
-    end
-
-    -- Give it the new geometry.
-    if not entry.shape:SetShapeData(shapeData) then
-        destroyShape(entry.shape)
-        shapes[key] = nil
-        return false
-    end
-
-    -- Clear the entry settings to force syncShape to rewrite them with new settings.
-    entry.shape.ignoreDepth = false
-    entry.colour, entry.x, entry.y, entry.z = nil, nil, nil, nil
-
-    -- The shape is current now, so sync it like any other.
+    -- Swap the new instance in. The old one draws until the next frame starts.
+    if entry ~= nil then retiring[#retiring + 1] = entry.shape end
+    entry = { shape = shape, signature = signature, mesh = mesh,
+              recheckAt = #mesh.borrowed > 0 and frame + Draw.recheckFrames or nil }
+    shapes[key] = entry
     retryAt[key] = nil
-    entry.signature = signature
     syncShape(entry, x, y, z, colour)
-
     return true
 end
 
@@ -263,6 +276,8 @@ end
 function Draw.beginFrame()
     frame = frame + 1
     Mesh.resetSamples()
+    for _, shape in ipairs(retiring) do destroyShape(shape) end
+    retiring = {}
 end
 
 ---Draws everything needed in a specific chunk.
@@ -289,8 +304,7 @@ function Draw.chunk(request)
             boxBuilt = true
             boxMesh = buildBox(level, chunk)
         end
-        if boxMesh == nil then return nil end
-        return boxMesh.finish()
+        return boxMesh
     end
 
     ---Helper for building the box and handling lid height.
@@ -356,7 +370,9 @@ end
 ---Destroy all the shapes and reset the drawing process.
 function Draw.reset()
     for _, entry in pairs(shapes) do destroyShape(entry.shape) end
+    for _, shape in ipairs(retiring) do destroyShape(shape) end
     shapes = {}
+    retiring = {}
     retryAt = {}
     Mesh.resetSamples()
     frame = 0
