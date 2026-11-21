@@ -10,7 +10,7 @@
 local Confirm = require("src/ui/confirm")
 local ContentView = require("src/ui/content_view")
 local Library = require("src/ui/prettyui")
-local Overlay = require("src/overlay")
+local Overlay = require("src/render/overlay")
 local Settings = require("src/settings")
 local SettingsView = require("src/ui/settings_view")
 

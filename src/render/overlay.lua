@@ -4,7 +4,7 @@
 -- See draw.lua for more information on how the building and drawing happens.
 
 local Chunk = require("src/chunk")
-local Draw = require("src/draw")
+local Draw = require("src/render/draw")
 local Overworld = require("src/overworld")
 local Settings = require("src/settings")
 local State = require("src/state")

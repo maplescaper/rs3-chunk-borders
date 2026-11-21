@@ -1,7 +1,7 @@
 local Settings = require("src/settings")
 local State = require("src/state")
-local Draw = require("src/draw")
-local Overlay = require("src/overlay")
+local Draw = require("src/render/draw")
+local Overlay = require("src/render/overlay")
 local Minimenu = require("src/minimenu")
 local UI = require("src/ui/init")
 

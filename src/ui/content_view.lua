@@ -2,7 +2,7 @@
 --
 -- Most of the building for all the settings happens in settings_form.lua.
 
-local Overlay = require("src/overlay")
+local Overlay = require("src/render/overlay")
 local SettingsForm = require("src/ui/settings_form")
 local State = require("src/state")
 

@@ -18,7 +18,7 @@
 -- found in drawShape.
 
 local Chunk = require("src/chunk")
-local Mesh = require("src/mesh")
+local Mesh = require("src/render/mesh")
 local Settings = require("src/settings")
 
 local Draw = {}
