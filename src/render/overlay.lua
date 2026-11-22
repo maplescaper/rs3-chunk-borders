@@ -1,8 +1,11 @@
 -- Entry point for all the drawing. Handles all the settings and how they interact
--- with each other as well as setting up what needs to be drawn.
+-- with each other as well as setting up a request for what needs to be drawn.
 --
--- See draw.lua for more information on how the building and drawing happens.
+-- See draw.lua for how a request becomes shapes, and box.lua, outline.lua,
+-- mesh.lua for the pieces that build those shapes. cache.lua and retry.lua provide
+-- shape caching, and retry logic respectively for the drawing process.
 
+local Box = require("src/render/box")
 local Chunk = require("src/chunk")
 local Draw = require("src/render/draw")
 local Overworld = require("src/overworld")
@@ -65,7 +68,7 @@ local function fillHeightFor(coord, margin, ceiling)
     -- Determine the height based on the settings and min/maxs. The lid is
     -- built BOX_CLEARANCE above the height asked for, so that comes off too,
     -- or a zero margin would leave the lid just above the camera.
-    local wanted = camera.y - ground - margin - Draw.BOX_CLEARANCE
+    local wanted = camera.y - ground - margin - Box.CLEARANCE
     if wanted > ceiling then wanted = ceiling end
     if wanted < FILL_MIN_LID then wanted = FILL_MIN_LID end
 
@@ -151,7 +154,7 @@ local function drawFrame(summary)
     -- with the camera it looks like the chunk is unlocked.
     local fillHeight, tracking = fillHeightFor(
         coord, Settings.get("fillCameraMargin") * Chunk.UNITS_PER_TILE,
-        asVolume and volumeHeight or Draw.BOX_REFERENCE_HEIGHT
+        asVolume and volumeHeight or Box.REFERENCE_HEIGHT
     )
     summary.trackingCamera = tracking
     summary.fillHeight = fillHeight
@@ -180,7 +183,7 @@ local function drawFrame(summary)
 
     -- Builds a request for everything a chunk needs drawn, then draws it. Handles all
     -- three parts of the drawing: ground fill/lid, tall volume, and grid lines.
-    local function drawChunk(chunk, ring)
+    local function requestChunk(chunk, ring)
         -- Skip any unlocked chunks.
         local locked = markLocked and not State.isUnlockedChunk(chunk)
         if not locked and outline == nil then return end
@@ -205,7 +208,7 @@ local function drawFrame(summary)
         end
 
         -- Draw everything that was requested
-        if Draw.chunk(request) then
+        if Draw.drawChunk(request) then
             summary.drawn = summary.drawn + 1
             if locked then summary.filled = summary.filled + 1 end
         end
@@ -217,7 +220,7 @@ local function drawFrame(summary)
         for dx = -ring, ring do
             for dz = -ring, ring do
                 if math.max(math.abs(dx), math.abs(dz)) == ring then
-                    drawChunk(centre:neighbour(dx, dz), ring)
+                    requestChunk(centre:neighbour(dx, dz), ring)
                 end
             end
         end
