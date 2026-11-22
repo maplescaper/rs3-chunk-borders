@@ -7,10 +7,10 @@ local Overworld = {}
 -- disjoint extra areas the chunk picker treats as overworld. See src/chunk.lua.
 Overworld.BOXES = {
     { 6950, 15424 },    -- main overworld
-    { 5206, 5721 },
-    { 7085, 10427 },
-    { 20512, 22824 },
-    { 13332, 16412 },
+    { 5206, 5721 },     -- Lost Grove
+    { 7085, 10427 },    -- Arc Islands
+    { 20512, 22824 },   -- Anachronia
+    { 13332, 16412 },   -- Havenhythe
 }
 
 ---Check if a chunk is in the overworld (mapped above).
