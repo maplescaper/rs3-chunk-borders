@@ -10,7 +10,7 @@ Overworld.BOXES = {
     { 5206, 5721 },
     { 7085, 10427 },
     { 20512, 22824 },
-    { 13332, 14876 },
+    { 13332, 16412 },
 }
 
 ---Check if a chunk is in the overworld (mapped above).

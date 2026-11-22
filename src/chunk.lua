@@ -24,7 +24,7 @@ Chunk.UNITS_PER_CHUNK = Chunk.UNITS_PER_TILE * Chunk.TILES_PER_CHUNK
 Chunk.PICKER_REMAP = {
     { 14870, 18212, -7785 },   -- Arc Islands
     { 14655, 16967,  5857 },   -- Anachronia
-    { 16176, 17720, -2844 },   -- Havenhythe
+    { 16176, 19256, -2844 },   -- Havenhythe
     {  7471,  7986, -2265 },   -- Lost Grove
 }
 
