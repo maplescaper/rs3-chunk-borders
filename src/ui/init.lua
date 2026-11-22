@@ -63,6 +63,7 @@ local function mount(name, component, build)
                 paddingRight = 12,
                 rowGap = 8,
             },
+            categoryID = "auto",
         })
         mounted[name] = { view = view, handle = build(view, component) }
     end)
