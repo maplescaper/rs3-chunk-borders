@@ -30,11 +30,14 @@ Draw.retryFrames = 12
 -- How often to check whether terrain has loaded under a partially built shape
 Draw.recheckFrames = 30
 
+-- How many frames a retired shape stays to prevent blinking
+Draw.retireFrames = 30
+
 local cache = Cache.new()
 local retries = Retry.new()
 local frame = 0
 
--- Entries being replaced by a rebuild, cleaned on the next frame to prevent blinking
+-- Shapes being retired
 local retiring = {}
 
 -- Used for ShapeList instance names
@@ -49,6 +52,19 @@ end
 ---@param entries table[]
 local function destroyEntries(entries)
     for _, entry in ipairs(entries) do destroyShape(entry.shape) end
+end
+
+---Destroys the retiring entries if they're ready
+local function destroyRetired()
+    local held = {}
+    for _, entry in ipairs(retiring) do
+        if entry.retireAt <= frame then
+            destroyShape(entry.shape)
+        else
+            held[#held + 1] = entry
+        end
+    end
+    retiring = held
 end
 
 ---Updates the shape with all settings, and marks it for keeping in the cache.
@@ -99,7 +115,7 @@ end
 ---Shows the cached shape when there is one for the geometry's signature or
 ---when the frame budget is spent. Otherwise builds it, sets up a retry if
 ---that fails, and caches it. Rebuilds draw the new shape first, then
----retire the old shape next frame to prevent blinking.
+---retire the old shape.
 ---
 ---Note: Signature and key are similar, but signature is used to determine when
 ---a cached key should be rebuilt, while key holds the existing **built** shape
@@ -150,14 +166,17 @@ local function drawShape(key, geometry, x, y, z, colour, alreadyBuilt)
         return true
     end
 
-    -- Swap the new instance in. The old one draws until the next frame starts.
+    -- Swap the new instance in. The old one keeps drawing for Draw.retireFrames.
     entry = {
         shape = shape, signature = signature, mesh = mesh,
         recheckAt = #mesh.borrowed > 0 and frame + Draw.recheckFrames or nil
     }
 
     local previous = cache:put(key, entry, frame)
-    if previous ~= nil then retiring[#retiring + 1] = previous end
+    if previous ~= nil then
+        previous.retireAt = frame + Draw.retireFrames
+        retiring[#retiring + 1] = previous
+    end
 
     retries:forget(key)
     updateAndKeepShape(entry, x, y, z, colour)
@@ -170,8 +189,7 @@ end
 function Draw.beginFrame()
     frame = frame + 1
     Mesh.resetSamples()
-    destroyEntries(retiring)
-    retiring = {}
+    destroyRetired()
 end
 
 ---Draws everything needed in a specific chunk.
